@@ -22,10 +22,24 @@ and possibly AI-driven personalized study recommendations in one app, encouragin
 10. We plan to meet 2 twice a week, and communicate through Discord. We have a server in Discord, with multiple channels based on what is being done, and have a voice channel where members
 can easily join to discuss the project. 
 
-11. Team Meetings: Monday at 5 pm online on Discord. Thursday, 5:30 pm in Engineering Center. Weekly Meetings: 10:45 AM on Thursday, online on Zoom
+11. Team Meetings: Monday at 5 pm online on Discord. Thursday, 5:30 pm in the Engineering Center. Weekly Meetings: 10:45 AM on Thursday, online on Zoom
 
 12. Refer to the images in the folder
 
 13. Refer to the images in the folder
 
 Extra Credit:
+Market Risk: Low User Adoption Due to Poor Social Integration
+Mitigation: Conduct rigorous UX research on competitor social tools (e.g., calendar sharing, chat). Ensure the sharing features are seamless and intuitive (e.g., one-tap sharing to a group). Focus the MVP on making collaboration the easiest part of the app.
+
+Technical Risk: Backend Scalability for Concurrent Users
+Mitigation: Design the database using a scalable architecture (e.g., microservices or serverless functions). Conduct early and continuous load testing to simulate 10,000+ students actively tracking and sharing schedules at peak times (e.g., during finals week).
+
+Design Risk: Poor Usability (Overwhelming Interface)
+Mitigation: Follow the "three-click rule" for all core actions (create schedule, track assignment). Prioritize a clean, minimalist dashboard to prevent feature overload. Conduct A/B testing on the schedule visualization to maximize clarity.
+
+Resource Risk: Delayed Third-Party Calendar Integration
+Mitigation: Start the integration work (e.g., Google Calendar, Outlook) immediately, using official, well-documented APIs. Build robust error handling to gracefully inform the user if an external sync fails, allowing them to proceed with manual entry.
+
+Compliance Risk: Student Data Confidentiality (Non-AI)
+Mitigation: Clearly define a User Data Policy that outlines exactly what is shared (e.g., only scheduled times) and what is private (e.g., notes/progress). Implement role-based access to ensure users can only see shared data, not private progress tracking.
