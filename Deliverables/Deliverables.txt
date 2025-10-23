@@ -1,0 +1,31 @@
+1. 015-5
+
+2. Study Buddies
+
+3. Abhishek Sachi, Aryan Pagar, Jason Broucek, Atsadang Deebunmee Na Chumphae, Zachary White
+
+4. studyBuddie
+
+5. “studyBuddie” is a student-focused productivity app that is designed to make studying more social and personalized while also being efficient at the same time. 
+Users will be able to create and share study schedules, track assignment progress, set daily or weekly goals, and do everything a student might need to do. 
+We might implement something with AI, such as a personal assistant that can give you study recommendations, help you plan efficiently, etc…
+
+6. Our audience is mainly focused on students, who are looking for an application that is more than a to-do list. They want an all-in-one platform where students 
+manage their workload and optimize their study habits. 
+
+7. For Learners who want to be more productive and scheduled. The studyBuddie is a productivity tracker that offers an all-in-one platform to manage their workload and optimize their 
+study habits. Unlike many apps out there, such as Google Calendar or Todoist for students, our app combines task management, peer interaction, 
+and possibly AI-driven personalized study recommendations in one app, encouraging collaboration and accountability. 
+
+9. We will use Agile Methodology. Using tools like Kanban.
+
+10. We plan to meet 2 twice a week, and communicate through Discord. We have a server in Discord, with multiple channels based on what is being done, and have a voice channel where members
+can easily join to discuss the project. 
+
+11. Team Meetings: Monday at 5 pm online on Discord. Thursday, 5:30 pm in Engineering Center. Weekly Meetings: 10:45 AM on Thursday, online on Zoom
+
+12. Refer to the images in the folder
+
+13. Refer to the images in the folder
+
+Extra Credit:
