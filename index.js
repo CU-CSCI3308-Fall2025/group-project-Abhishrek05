@@ -20,31 +20,31 @@ const axios = require('axios'); // To make HTTP requests from our server. We'll 
 
 // create `ExpressHandlebars` instance and configure the layouts and partials dir.
 const hbs = handlebars.create({
-extname: 'hbs',
-layoutsDir: __dirname + '/views/layouts',
-partialsDir: __dirname + '/views/partials',
+    extname: 'hbs',
+    layoutsDir: __dirname + '/views/layouts',
+    partialsDir: __dirname + '/views/partials',
 });
 
 // database configuration
 const dbConfig = {
-host: 'db', // the database server
-port: 5432, // the database port
-database: process.env.POSTGRES_DB, // the database name
-user: process.env.POSTGRES_USER, // the user account to connect with
-password: process.env.POSTGRES_PASSWORD, // the password of the user account
+    host: 'db', // the database server
+    port: 5432, // the database port
+    database: process.env.POSTGRES_DB, // the database name
+    user: process.env.POSTGRES_USER, // the user account to connect with
+    password: process.env.POSTGRES_PASSWORD, // the password of the user account
 };
 
 const db = pgp(dbConfig);
 
 // test your database
 db.connect()
-.then(obj => {
-console.log('Database connection successful'); // you can view this message in the docker compose logs
-obj.done(); // success, release the connection;
-})
-.catch(error => {
-console.log('ERROR:', error.message || error);
-});
+    .then(obj => {
+        console.log('Database connection successful'); // you can view this message in the docker compose logs
+        obj.done(); // success, release the connection;
+    })
+    .catch(error => {
+        console.log('ERROR:', error.message || error);
+    });
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -58,17 +58,17 @@ app.use(bodyParser.json()); // specify the usage of JSON for parsing request bod
 
 // initialize session variables
 app.use(
-session({
-secret: process.env.SESSION_SECRET,
-saveUninitialized: false,
-resave: false,
-})
+    session({
+        secret: process.env.SESSION_SECRET,
+        saveUninitialized: false,
+        resave: false,
+    })
 );
 
 app.use(
-bodyParser.urlencoded({
-extended: true,
-})
+    bodyParser.urlencoded({
+        extended: true,
+    })
 );
 
 // *****************************************************
@@ -79,30 +79,30 @@ extended: true,
 
 // Display HTML for Register page
 app.get('/register', (req, res) => {
-res.render('pages/register.hbs', {})
+    res.render('pages/register.hbs', {})
 });
 
 // Register
 app.post('/register', async (req, res) => {
-//hash the password using bcrypt library
-console.log(req.body.username);
-console.log(req.body.password);
-const hash = await bcrypt.hash(req.body.password, 10);
+    //hash the password using bcrypt library
+    console.log(req.body.username);
+    console.log(req.body.password);
+    const hash = await bcrypt.hash(req.body.password, 10);
 
-// To-DO: Insert username and hashed password into the 'users' table
-try {
+    // To-DO: Insert username and hashed password into the 'users' table
+    try {
 
-console.log('fetched response');
-let InsertPassword = `insert into users (username, password) values ('${req.body.username}', '${hash}');`;
-let results = await db.any(InsertPassword);
-res.redirect('/login');
+        console.log('fetched response');
+        let InsertPassword = `insert into users (username, password) values ('${req.body.username}', '${hash}');`;
+        let results = await db.any(InsertPassword);
+        res.redirect('/login');
 
-} catch (error) {
+    } catch (error) {
 
-console.log(error);
-res.redirect('/register');
+        console.log(error);
+        res.redirect('/register');
 
-}
+    }
 
 });
 
@@ -111,5 +111,5 @@ res.redirect('/register');
 // *****************************************************
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
