@@ -114,24 +114,52 @@ app.post('/register', async (req, res) => {
   console.log(req.body.username);
   console.log(req.body.password);
   const hash = await bcrypt.hash(req.body.password, 10);
-
   // To-DO: Insert username and hashed password into the 'users' table
   try {
-
     console.log('fetched response');
     let InsertPassword = `insert into users (username, password) values ('${req.body.username}', '${hash}');`;
     let results = await db.any(InsertPassword);
     res.redirect('/login');
-
   } catch (error) {
-
     console.log(error);
     res.redirect('/register');
-
   }
 
 });
 
+app.get('/login', (req, res) => {
+  res.render('pages/login.hbs', {})
+});
+
+app.post('/login', async (req, res) => {
+  try {
+    const {username, password} = req.body;
+    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username]);
+    if(!user) {
+      return res.redirect('/register');
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if(!match) {
+      return res.render('pages/login', { message: 'Invalid username or password', error: true });
+    }
+    req.session.user = user;
+    req.session.save(() => {
+      res.redirect('/discover');
+    });
+  } catch (error) {
+    console.log('login error', error);
+    res.redirect('/login');
+  }
+});
+
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+app.use(auth);
 // *****************************************************
 // <!-- Section 5 : Start Server -->
 // *****************************************************
