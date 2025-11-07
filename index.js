@@ -78,6 +78,31 @@ app.use(
 
 // TODO - Include your API routes here
 
+app.get('/login', (req, res) => {
+  res.render('../views/pages/login')
+});
+
+app.post('/login', (req, res) => {
+    // check if password from request matches with password in DB
+    // const match = await bcrypt.compare(req.body.password, user.password);
+    const match = bcrypt.compare(req.body.password, user.password);
+
+    //save user details in session like in lab 7
+    req.session.user = user;
+    req.session.save();
+    // Authentication Middleware.
+    const auth = (req, res, next) => {
+    if (!req.session.user) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+    };
+
+    // Authentication Required
+    app.use(auth);
+});
+
 // Display HTML for Register page
 app.get('/register', (req, res) => {
   res.render('pages/register.hbs', {})
@@ -135,3 +160,10 @@ const auth = (req, res, next) => {
 }
 
 app.use(auth);
+// *****************************************************
+// <!-- Section 5 : Start Server -->
+// *****************************************************
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
