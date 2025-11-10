@@ -77,6 +77,10 @@ app.use(
 // *****************************************************
 
 // TODO - Include your API routes here
+// This is a dummy API to test using the code snippet given in Step 5.
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
 
 app.get('/login', (req, res) => {
   res.render('../views/pages/login')
@@ -164,6 +168,6 @@ app.use(auth);
 // <!-- Section 5 : Start Server -->
 // *****************************************************
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+module.exports = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
