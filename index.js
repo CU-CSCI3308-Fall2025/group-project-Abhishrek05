@@ -164,6 +164,21 @@ const auth = (req, res, next) => {
 }
 
 app.use(auth);
+
+app.get('/calendar', (req, res) => {
+  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    if(err) {
+      console.error('Error during logout:', err);
+      return res.render('pages/logout', { message: 'Error logging out. Please try again.', error: true });
+    }
+    return res.render('pages/logout', { message: 'Successfully logged out!' });
+  });
+  
+});
 // *****************************************************
 // <!-- Section 5 : Start Server -->
 // *****************************************************
