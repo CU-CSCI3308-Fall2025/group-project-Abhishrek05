@@ -4,25 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login</title>
-  <link rel="stylesheet" href="../../public/css/login.css" />
+  <link rel="stylesheet" href="/css/login.css" />
 </head>
 <body>
   <div class="login-container">
     <div class="login-image">
-  <img src="../../public/images/studyBuddie.png" alt="App Logo">
+      <img src="/images/studyBuddie.png" alt="App Logo">
     </div>
     <div class="login-form">
       <h1>Login</h1>
-      <p class="register-link">Don't have an account? <a href="#">Register</a></p>
+      <p class="register-link">Don't have an account? <a href="/register">Register</a></p>
 
-      <form>
+      <form action="/login" method="POST">
         <label for="username">USERNAME</label>
-        <input type="text" id="username" placeholder="RandomUsername" />
+        <input type="text" id="username" name="username" placeholder="RandomUsername" required />
 
         <label for="password">PASSWORD</label>
-        <input type="password" id="password" placeholder="Enter password containing:" />
+        <input type="password" id="password" name="password" placeholder="Enter password containing:" required />
 
-        <button type="submit">sign up</button>
+        <button type="submit">Sign Up</button>
       </form>
     </div>
   </div>
