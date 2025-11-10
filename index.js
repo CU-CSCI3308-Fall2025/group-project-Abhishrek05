@@ -77,6 +77,10 @@ app.use(
 // *****************************************************
 
 // TODO - Include your API routes here
+// This is a dummy API to test using the code snippet given in Step 5.
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
 
 app.get('/login', (req, res) => {
   res.render('../views/pages/login')
@@ -160,10 +164,25 @@ const auth = (req, res, next) => {
 }
 
 app.use(auth);
+
+app.get('/calendar', (req, res) => {
+  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    if(err) {
+      console.error('Error during logout:', err);
+      return res.render('pages/logout', { message: 'Error logging out. Please try again.', error: true });
+    }
+    return res.render('pages/logout', { message: 'Successfully logged out!' });
+  });
+  
+});
 // *****************************************************
 // <!-- Section 5 : Start Server -->
 // *****************************************************
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+module.exports = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
