@@ -77,6 +77,35 @@ app.use(
 // *****************************************************
 
 // TODO - Include your API routes here
+// This is a dummy API to test using the code snippet given in Step 5.
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
+app.get('/login', (req, res) => {
+  res.render('../views/pages/login')
+});
+
+app.post('/login', (req, res) => {
+    // check if password from request matches with password in DB
+    // const match = await bcrypt.compare(req.body.password, user.password);
+    const match = bcrypt.compare(req.body.password, user.password);
+
+    //save user details in session like in lab 7
+    req.session.user = user;
+    req.session.save();
+    // Authentication Middleware.
+    const auth = (req, res, next) => {
+    if (!req.session.user) {
+        // Default to login page.
+        return res.redirect('/login');
+    }
+    next();
+    };
+
+    // Authentication Required
+    app.use(auth);
+});
 
 // Display HTML for Register page
 app.get('/register', (req, res) => {
@@ -89,20 +118,71 @@ app.post('/register', async (req, res) => {
   console.log(req.body.username);
   console.log(req.body.password);
   const hash = await bcrypt.hash(req.body.password, 10);
-
   // To-DO: Insert username and hashed password into the 'users' table
   try {
-
     console.log('fetched response');
     let InsertPassword = `insert into users (username, password) values ('${req.body.username}', '${hash}');`;
     let results = await db.any(InsertPassword);
     res.redirect('/login');
-
   } catch (error) {
-
     console.log(error);
     res.redirect('/register');
-
   }
 
+});
+
+app.get('/login', (req, res) => {
+  res.render('pages/login.hbs', {})
+});
+
+app.post('/login', async (req, res) => {
+  try {
+    const {username, password} = req.body;
+    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username]);
+    if(!user) {
+      return res.redirect('/register');
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if(!match) {
+      return res.render('pages/login', { message: 'Invalid username or password', error: true });
+    }
+    req.session.user = user;
+    req.session.save(() => {
+      res.redirect('/discover');
+    });
+  } catch (error) {
+    console.log('login error', error);
+    res.redirect('/login');
+  }
+});
+
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+}
+
+app.use(auth);
+
+app.get('/calendar', (req, res) => {
+  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    if(err) {
+      console.error('Error during logout:', err);
+      return res.render('pages/logout', { message: 'Error logging out. Please try again.', error: true });
+    }
+    return res.render('pages/logout', { message: 'Successfully logged out!' });
+  });
+  
+});
+// *****************************************************
+// <!-- Section 5 : Start Server -->
+// *****************************************************
+const PORT = process.env.PORT || 3000;
+module.exports = app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
