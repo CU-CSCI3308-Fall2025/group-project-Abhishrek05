@@ -1,0 +1,83 @@
+Feature 1: Login Password Authentication
+User authentication fails when the user provides invalid credential 
+username: john12 password: p@ssword this was the input being put int 
+Local host is used to test this feature
+There are two results:
+- Redirect to the calendar page
+- Redirect back to the login page with a pop-up message saying “Invalid Credentials! Please check your Username/Password and then try again”
+The user should be a student who is enrolled in educational institutions who has assignment with due date. To be able to add. 
+The test result will be situational and show whether the login path works. The test will show that the authentication works If correct password/username was inputted, then the redirect to the calendar page will happen. Also, if incorrect credential was put in the redirect to the login page with the pop-up message.
+one of the feature UAT
+
+Feature 2: Email Authentication
+Feature Description:
+Verifies that the Email field in User Registration is:
+Mandatory (cannot be empty) and Unique (cannot already exist)
+Acceptance Criteria:
+User cannot submit the registration form without providing an email address
+User cannot submit the registration form using an email address that already exists in the users table of the application database
+Test environment:
+Local host
+URL: http://localhost:3000/register
+Test Case 1 → Empty email
+Test Data: email: (empty), password: password123, username: Josh123, institution: CU Boulder
+Expected Result:
+Form is not submitted
+Clear error message is shown
+No user record is added to the database
+User is redirected to Register page
+Test Case 2 → Duplicate Email
+Test Data: email: existing_user@gmail.com, password: password123, username: Josh123, institution: CU Boulder
+Expected Result
+Form is not submitted
+Clear error message is shown
+No duplicate user record is added to the database
+User is redirected to Register page
+
+Feature 3: Registration Password Authentication
+
+Verifies that the Password field in the User Registration page meets the required validation rules and ensures password security.
+
+Acceptance Criteria:
+User cannot submit the registration form with a password shorter than 8 characters.
+User cannot submit the registration form without including at least one uppercase letter, one lowercase letter, and one numeric digit.
+A clear, user-friendly error message should appear indicating the exact reason for validation failure.
+Successful registration occurs only when all password criteria are met.
+Test Environment:
+Local host URL: http://localhost:3000/register
+User Acceptance Testers: Student users enrolled in educational institutions who will use the application to manage assignments and deadlines. These testers will verify whether password validation works correctly during registration.
+
+Test Case 1: Weak Password (Too Short)
+Test Data:
+email: new_user@gmail.com
+password: pass1
+username: Sam99
+institution: CU Boulder
+Expected Result:
+Form is not submitted
+Error message: “Password must be at least 8 characters long.”
+No user record is added to the database
+User remains on the Register page
+
+Test Case 2: Weak Password (Missing Uppercase or Number)
+Test Data:
+email: new_user2@gmail.com
+password: password
+username: Ella23
+institution: CU Boulder
+Expected Result:
+Form is not submitted
+Error message: “Password must include at least one uppercase letter and one number.”
+No user record is added to the database
+User remains on the Register page
+
+Test Case 3: Strong Password (Valid)
+Test Data:
+email: valid_user@gmail.com
+password: Secure123
+username: Liam45
+institution: CU Boulder
+Expected Result:
+Form is successfully submitted
+New user record is added to the database
+User is redirected to the login or home page with the message “Registration successful!”
