@@ -1,0 +1,16 @@
+Week 1 meeting:
+Add milestone weekly tasks for each member/task distribution/framework
+
+Wireframe looks good
+
+Finish task distribution and milestone during lab
+
+Week 2 meeting:
+The front end looks good so far, talked about what was completed this week so far. We talked about what individuals are doing and what is planned for next week.
+
+For next week have info on what everyone has fully completed.
+
+Week 3 meeting:
+The register and login page are linked well, everything looks good so far.
+
+For next weeek it is a good plan to have the databases working fully for storing user account data and start/complete home/calender page.
