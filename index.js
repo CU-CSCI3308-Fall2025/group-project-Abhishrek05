@@ -114,15 +114,13 @@ app.get('/register', (req, res) => {
 
 // Register
 app.post('/register', async (req, res) => {
-  //hash the password using bcrypt library
-  console.log(req.body.username);
-  console.log(req.body.password);
-  const hash = await bcrypt.hash(req.body.password, 10);
-  // To-DO: Insert username and hashed password into the 'users' table
+  const { email, username, institution, password } = req.body;
+  const hash = await bcrypt.hash(password, 10);
   try {
-    console.log('fetched response');
-    let InsertPassword = `insert into users (username, password) values ('${req.body.username}', '${hash}');`;
-    let results = await db.any(InsertPassword);
+    await db.none(
+      'INSERT INTO users (email, password, username, institution) VALUES ($1, $2, $3, $4)',
+      [email, hash, username, institution || null]
+    );
     res.redirect('/login');
   } catch (error) {
     console.log(error);
