@@ -168,7 +168,7 @@ app.get('/calendar', (req, res) => {
 });
 
 app.get('/game', (req, res) => {
-  res.render('pages/game.hbs', {})
+  res.render('pages/game.hbs', {}) // ! Game Page still needs to get added
 });
 
 app.get('/logout', (req, res) => {
