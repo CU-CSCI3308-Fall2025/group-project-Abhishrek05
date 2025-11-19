@@ -78,34 +78,34 @@ app.use(
 
 // TODO - Include your API routes here
 // This is a dummy API to test using the code snippet given in Step 5.
-app.get('/welcome', (req, res) => {
-  res.json({status: 'success', message: 'Welcome!'});
-});
+// app.get('/welcome', (req, res) => {
+//   res.json({status: 'success', message: 'Welcome!'});
+// });
 
-app.get('/login', (req, res) => {
-  res.render('../views/pages/login')
-});
+// app.get('/login', (req, res) => {
+//   res.render('../views/pages/login')
+// });
 
-app.post('/login', (req, res) => {
-    // check if password from request matches with password in DB
-    // const match = await bcrypt.compare(req.body.password, user.password);
-    const match = bcrypt.compare(req.body.password, user.password);
+// app.post('/login', (req, res) => {
+//     // check if password from request matches with password in DB
+//     // const match = await bcrypt.compare(req.body.password, user.password);
+//     const match = bcrypt.compare(req.body.password, user.password);
 
-    //save user details in session like in lab 7
-    req.session.user = user;
-    req.session.save();
-    // Authentication Middleware.
-    const auth = (req, res, next) => {
-    if (!req.session.user) {
-        // Default to login page.
-        return res.redirect('/login');
-    }
-    next();
-    };
+//     //save user details in session like in lab 7
+//     req.session.user = user;
+//     req.session.save();
+//     // Authentication Middleware.
+//     const auth = (req, res, next) => {
+//     if (!req.session.user) {
+//         // Default to login page.
+//         return res.redirect('/login');
+//     }
+//     next();
+//     };
 
-    // Authentication Required
-    app.use(auth);
-});
+//     // Authentication Required
+//     app.use(auth);
+// });
 
 // Display HTML for Register page
 app.get('/register', (req, res) => {
