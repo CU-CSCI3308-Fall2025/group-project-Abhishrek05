@@ -167,6 +167,10 @@ app.get('/calendar', (req, res) => {
   res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
 });
 
+app.get('/game', (req, res) => {
+  res.render('pages/game.hbs', {}) // ! Game Page still needs to get added
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     if(err) {
