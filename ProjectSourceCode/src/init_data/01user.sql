@@ -4,4 +4,3 @@ CREATE TABLE users (
     username VARCHAR(50) PRIMARY KEY,
     institution VARCHAR(50)
 );
-

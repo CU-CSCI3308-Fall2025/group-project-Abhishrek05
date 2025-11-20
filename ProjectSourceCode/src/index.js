@@ -58,9 +58,10 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 
 // initialize session variables
-app.use(
+
+app.use(                  // ----------------------------------------------
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "my-local-secret",
     saveUninitialized: false,
     resave: false,
   })
@@ -154,11 +155,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Calendar route - accessible without authentication for now
-app.get('/calendar', (req, res) => {
-  res.render('pages/calendar.hbs', {})
-});
-
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -167,6 +163,14 @@ const auth = (req, res, next) => {
 }
 
 app.use(auth);
+
+app.get('/calendar', (req, res) => {
+  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
+});
+
+app.get('/game', (req, res) => {
+  res.render('pages/game.hbs', {}) // ! Game Page still needs to get added
+});
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
@@ -184,4 +188,36 @@ app.get('/logout', (req, res) => {
 const PORT = process.env.PORT || 3000;
 module.exports = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+
+
+// Searching for user
+app.get('/searchUser', async (req, res) => { // 
+  try {
+    console.log(req.body.username); // store the input to search 
+    const requestedUser = req.username;
+    const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [username]);
+    if(!user) {
+      return res.redirect('/friendList');
+    }
+
+  } catch (error) {
+   
+  }
+});
+
+// List out all the friend 
+app.get('/listFriend', async (req, res) => { // 
+  try {
+    console.log(req.body.username); // store the input to search 
+    const requestedUser = req.username;
+    const user = await db.oneOrNone('SELECT * FROM friendList WHERE username = $1', [username]);
+    if(!user) {
+      return res.redirect('/friendList');
+    }
+
+  } catch (error) {
+   
+  }
 });
