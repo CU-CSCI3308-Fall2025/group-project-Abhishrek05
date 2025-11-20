@@ -154,6 +154,11 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Calendar route - accessible without authentication for now
+app.get('/calendar', (req, res) => {
+  res.render('pages/calendar.hbs', {})
+});
+
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -162,10 +167,6 @@ const auth = (req, res, next) => {
 }
 
 app.use(auth);
-
-app.get('/calendar', (req, res) => {
-  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
-});
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
