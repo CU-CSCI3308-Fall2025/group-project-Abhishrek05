@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{{!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -28,3 +28,46 @@
   </div>
 </body>
 </html>
+ --}}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <link rel="stylesheet" href="/css/login.css" />
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-image">
+      <img src="/css/images/studyBuddie.png" alt="App Logo">
+    </div>
+    <div class="login-form">
+      <h1>Login</h1>
+      <p class="register-link">Don't have an account? <a href="/register">Register</a></p>
+
+      <form action="/login" method="POST">
+        <label for="username">USERNAME</label>
+        <input type="text" id="username" name="username" placeholder="RandomUsername" required />
+
+        <label for="password">PASSWORD</label>
+        <input type="password" id="password" name="password" placeholder="Enter password containing:" required />
+
+
+        {{#if error}}
+          <p style="color:red; font-weight:bold; margin-bottom:10px;">
+            {{message}}
+          </p>
+        {{/if}}
+        <button type="submit" onclick=alert("Incorrect credential")>Login</button>
+
+        {{!-- <button type="submit" onclick=alert("Password doesn't exist")>Sign Up</button> --}}
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+
+

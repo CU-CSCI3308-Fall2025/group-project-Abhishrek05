@@ -1,4 +1,4 @@
-{{!< layouts/main }}
+{{!-- {{!< layouts/main }}
 
 <div class="page">
   <div class="container">
@@ -35,6 +35,56 @@
 
           <div class="actions">
             <button class="btn-primary" type="submit">Sign Up</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+ --}}
+
+{{!< layouts/main }}
+
+<div class="page">
+  <div class="container">
+    <aside class="decor" aria-hidden="true">
+      <div class="sticky gray">sample text</div>
+      <div class="sticky yellow">sample text</div>
+      <div class="sticky pink">sample text</div>
+    </aside>
+
+    <main>
+      <div class="card">
+        <h1>registration</h1>
+        <p class="subtitle">Already have an account? <a href="/login">Login</a></p>
+        <form action="/register" method="POST">
+          <div class="field">
+            <span class="label-sm">EMAIL</span>
+            <input id="email" name="email" type="email" placeholder="Random@email.com" autocomplete="email" required>
+          </div>
+
+          <div class="field">
+            <span class="label-sm">PASSWORD</span>
+            <input id="password" name="password" type="password" placeholder="" autocomplete="new-password" required>
+          </div>
+
+          <div class="field">
+            <span class="label-sm">USERNAME</span>
+            <input id="username" name="username" type="text" placeholder="John1285" autocomplete="username" required>
+          </div>
+
+          <div class="field">
+            <span class="label-sm">INSTITUTION</span>
+            <input id="institution" name="institution" type="text" placeholder="CU Boulder">
+          </div>
+
+          <div class="actions">
+            {{#if error}}
+              <p style="color:red; font-weight:bold; margin-bottom:10px;">
+                {{message}}
+              </p>
+            {{/if}}
+            <button class="btn-primary" onclick=alert("Username/Email already exist") type="submit">Sign Up</button>
           </div>
         </form>
       </div>
