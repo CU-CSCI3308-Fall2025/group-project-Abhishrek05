@@ -475,40 +475,40 @@ app.get('/logout', (req, res) => {
 
 
 // Remove assignment assignment_friends -> then maybe from assignment
-app.get('/removeAssignment', async (req, res) => { // 
-  try {
-    // Look up assignment
-    const assignmentName = await db.oneOrNone('SELECT * FROM assignments WHERE name = $1', 
-    [assignmentRequest]);
+// app.get('/removeAssignment', async (req, res) => { // 
+//   try {
+//     // Look up assignment
+//     const assignmentName = await db.oneOrNone('SELECT * FROM assignments WHERE name = $1', 
+//     [assignmentRequest]);
 
-    // No Assignment with given Name
-    if (!assignmentName) {
-      return res.render('/calendar', {error: true, message: 'Invalid Assignment'});
-    }
+//     // No Assignment with given Name
+//     if (!assignmentName) {
+//       return res.render('/calendar', {error: true, message: 'Invalid Assignment'});
+//     }
     
-    // Look up current user info
-    currentUser = req.session.user.username;
+//     // Look up current user info
+//     currentUser = req.session.user.username;
 
-    // delete the entry from assignment_friends
-    await db.none('DELETE FROM assignment_friends WHERE assignment_name = $1 AND user_username = $2',
-    [assignmentName.name, currentUser]);
+//     // delete the entry from assignment_friends
+//     await db.none('DELETE FROM assignment_friends WHERE assignment_name = $1 AND user_username = $2',
+//     [assignmentName.name, currentUser]);
 
-    // Look up the count of assignment in assignment_friends
-    const entryCount = await db.oneOrNone('SELECT COUNT(*) FROM assignment_friends WHERE assignment_name = $1;',
-    [assignmentName.name]);
+//     // Look up the count of assignment in assignment_friends
+//     const entryCount = await db.oneOrNone('SELECT COUNT(*) FROM assignment_friends WHERE assignment_name = $1;',
+//     [assignmentName.name]);
     
-    // Deleted assignment in assignment if..-> All the assignmented deleted in assignment_friends
-    if(entryCount.count == "0")
-    {
-      const entryEvent = await db.none('DELETE FROM assignments WHERE name = $1',
-      [assignmentName.name]);
-    }
+//     // Deleted assignment in assignment if..-> All the assignmented deleted in assignment_friends
+//     if(entryCount.count == "0")
+//     {
+//       const entryEvent = await db.none('DELETE FROM assignments WHERE name = $1',
+//       [assignmentName.name]);
+//     }
 
-  } catch (error) {
-    console.log(error);
-    res.redirect('/calendar');
-  }
-});
+//   } catch (error) {
+//     console.log(error);
+//     res.redirect('/calendar');
+//   }
+// });
 // *****************************************************
 // <!-- Section 5 : Start Server -->
 // *****************************************************
@@ -520,6 +520,5 @@ module.exports = app.listen(PORT, () => {
 
 
 
-const { username, password } = req.body; // capture login / password
 
     
