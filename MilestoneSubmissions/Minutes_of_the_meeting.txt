@@ -14,3 +14,8 @@ Week 3 meeting:
 The register and login page are linked well, everything looks good so far.
 
 For next weeek it is a good plan to have the databases working fully for storing user account data and start/complete home/calender page.
+
+Week 4 meeting:
+Make sure everything works before presentation, our plan is to have it fully complete before the end of break so we can practice on presenting.
+
+Be able to change assignments once created, and make sure users don't double register.
