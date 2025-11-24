@@ -458,6 +458,14 @@ app.get('/calendar', (req, res) => {
   res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
 });
 
+app.get('/friends', (req, res) => {
+res.render('pages/friends.hbs', {
+friends: [],
+searchResults: []
+});
+});
+
+
 app.get('/game', (req, res) => {
   res.render('pages/game.hbs', {}) // ! Game Page still needs to get added
 });

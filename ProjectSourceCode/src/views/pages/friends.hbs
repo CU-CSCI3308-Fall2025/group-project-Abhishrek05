@@ -1,0 +1,222 @@
+{{!< layouts/main }}
+
+<div class="page friends-page">
+  <div class="container friends-layout">
+    <main>
+      <div class="card friends-card">
+        <div class="friends-header">
+          <h1>Friends</h1>
+          <p class="subtitle">See who you study with and discover new teammates</p>
+        </div>
+
+        <div class="friends-grid">
+          <section class="friends-panel friends-panel-left">
+            <div class="panel-heading">
+              <span class="label-sm">YOUR FRIENDS</span>
+            </div>
+
+            {{#if friends.length}}
+              <ul class="friend-list">
+                {{#each friends}}
+                  <li class="friend-row">
+                    <div class="friend-details">
+                      <span class="friend-name">{{this.username}}</span>
+                      {{#if this.email}}
+                        <span class="friend-meta">{{this.email}}</span>
+                      {{/if}}
+                    </div>
+                    <form action="/friends/remove" method="POST" class="friend-actions">
+                      <input type="hidden" name="friendId" value="{{this.id}}">
+                      <button class="btn-secondary" type="submit">Remove</button>
+                    </form>
+                  </li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <p class="empty-state">You haven't added anyone yet. Start exploring new study buddies.</p>
+            {{/if}}
+          </section>
+
+          <section class="friends-panel search-panel friends-panel-right">
+            <div class="panel-heading">
+              <p>Look up classmates by username or email and invite them.</p>
+            </div>
+
+            <form class="search-form" action="/friends" method="GET">
+              <label for="friendQuery">SEARCH USERS</label>
+              <input id="friendQuery" name="query" type="text" placeholder="Try 'studybuddy3' or 'studbud3@gmail.com' " required>
+              <button class="btn-primary" type="submit">Search</button>
+            </form>
+
+            {{#if searchResults.length}}
+              <ul class="friend-list results-list">
+                {{#each searchResults}}
+                  <li class="friend-row">
+                    <div class="friend-details">
+                      <span class="friend-name">{{this.username}}</span>
+                      {{#if this.email}}
+                        <span class="friend-meta">{{this.email}}</span>
+                      {{/if}}
+                    </div>
+                    <form action="/friends/add" method="POST" class="friend-actions">
+                      <input type="hidden" name="userId" value="{{this.id}}">
+                      <button class="btn-primary btn-compact" type="submit">Add</button>
+                    </form>
+                  </li>
+                {{/each}}
+              </ul>
+            {{/if}}
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<style>
+  .friends-page {
+    min-height: 100vh;
+    padding: 0;
+    display: flex;
+  }
+
+  .friends-page .container {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    display: block;
+  }
+
+  .friends-page main {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+  }
+
+  .friends-page .card {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    min-height: 100vh;
+    flex: 1;
+  }
+
+  .friends-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .friends-header {
+    padding: 24px;
+    border-bottom: 1px solid #d0d7de;
+  }
+
+  .friends-header h1,
+  .friends-header .subtitle {
+    margin: 0;
+  }
+
+  .friends-header .subtitle {
+    margin-top: 8px;
+  }
+
+  .friends-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex: 1;
+  }
+
+  .friends-panel {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .friends-panel-left {
+    border-right: 1px solid #d0d7de;
+  }
+
+  .friends-panel-right {
+    border-left: 1px solid #d0d7de;
+  }
+
+  .panel-heading p {
+    margin: 4px 0 0;
+    color: #57606a;
+    font-size: 13px;
+  }
+
+  .friend-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .friend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .friend-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .friend-name {
+    font-weight: 600;
+    font-size: 15px;
+    text-transform: capitalize;
+  }
+
+  .friend-meta {
+    font-size: 12px;
+    color: #57606a;
+  }
+
+  .empty-state {
+    font-size: 13px;
+    color: #57606a;
+    margin: 0;
+  }
+
+  .search-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .btn-secondary {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #d0d7de;
+    background: #fff;
+    color: #24292f;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .btn-secondary:hover {
+    background: #f6f8fa;
+  }
+
+  .friend-actions {
+    margin: 0;
+  }
+
+  .btn-compact {
+    padding: 8px 12px;
+  }
+</style>
