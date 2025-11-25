@@ -458,12 +458,108 @@ app.get('/calendar', (req, res) => {
   res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
 });
 
-app.get('/friends', (req, res) => {
-res.render('pages/friends.hbs', {
-friends: [],
-searchResults: []
+app.get('/friends', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+  const current = req.session.user.username;
+
+  const friends = await db.any(
+    `
+      SELECT DISTINCT ON (u.username)
+             u.username,
+             u.email,
+             u.institution
+      FROM friendList f
+      JOIN users u
+        ON u.username = CASE
+                          WHEN f.user_username = $1 THEN f.friend_username
+                          ELSE f.user_username
+                        END
+      WHERE f.user_username = $1
+      ORDER BY u.username
+    `,
+    [current]
+  );
+
+  let searchResults = [];
+  if (req.query.query) {
+    const term = `%${req.query.query}%`;
+    searchResults = await db.any(
+      `
+        SELECT username, email, institution
+        FROM users u
+        WHERE (u.username ILIKE $1 OR u.email ILIKE $1)
+          AND u.username <> $2
+          AND NOT EXISTS (
+            SELECT 1
+            FROM friendList f
+            WHERE (f.user_username = $2 AND f.friend_username = u.username)
+               OR (f.friend_username = $2 AND f.user_username = u.username)
+          )
+      `,
+      [term, current]
+    );
+  }
+
+  res.render('pages/friends', { 
+    friends, 
+    searchResults 
+  });
 });
+
+// Add a friend
+app.post('/friends/add', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+
+  const current = req.session.user.username;
+  const target = req.body.username;
+
+  if (!target || target === current) return res.redirect('/friends');
+
+  const exists = await db.one(
+    `
+      SELECT COUNT(*) AS count
+      FROM friendList
+      WHERE (user_username = $1 AND friend_username = $2)
+         OR (user_username = $2 AND friend_username = $1)
+    `,
+    [current, target]
+  );
+
+  if (Number(exists.count) === 0) {
+    await db.none(
+      'INSERT INTO friendList (user_username, friend_username) VALUES ($1, $2)',
+      [current, target]
+    );
+    await db.none(
+      'INSERT INTO friendList (user_username, friend_username) VALUES ($1, $2)',
+      [target, current]
+    );
+  }
+
+  res.redirect('/friends');
 });
+
+// Remove a friend
+app.post('/friends/remove', async (req, res) => {
+  if (!req.session.user) return res.redirect('/login');
+
+  const current = req.session.user.username;
+  const target = req.body.friendUsername;
+
+  if (target) {
+    await db.none(
+      `
+        DELETE FROM friendList
+        WHERE (user_username = $1 AND friend_username = $2)
+           OR (user_username = $2 AND friend_username = $1)
+      `,
+      [current, target]
+    );
+  }
+
+  res.redirect('/friends');
+});
+
 
 
 app.get('/game', (req, res) => {
@@ -529,4 +625,3 @@ module.exports = app.listen(PORT, () => {
 
 
 
-    
