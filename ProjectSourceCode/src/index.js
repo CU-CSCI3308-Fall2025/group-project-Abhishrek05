@@ -432,7 +432,7 @@ app.post('/login', async (req, res) => {
     // Password OK → log in
     req.session.user = user;
     req.session.save(() => {
-      res.redirect('/discover');
+      res.redirect('/calendar');
     });
 
   } catch (error) {
