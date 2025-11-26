@@ -645,6 +645,9 @@ app.get('/friends', async (req, res) => {
   }
 
   res.render('pages/friends', { 
+    title: 'Friends - StudyBuddie',
+    user: req.session.user,
+    currentPage: 'friends',
     friends, 
     searchResults 
   });
@@ -714,13 +717,9 @@ app.get('/game', (req, res) => {
   }) // ! Game Page still needs to get added
 });
 
-// Placeholder routes for navbar links
+// Add buddies route - redirects to friends
 app.get('/add-buddies', (req, res) => {
-  res.render('pages/add-buddies.hbs', {
-    title: 'Add Buddies - StudyBuddie',
-    user: req.session.user,
-    currentPage: 'add-buddies'
-  });
+  res.redirect('/friends');
 });
 
 app.get('/study-groups', (req, res) => {
