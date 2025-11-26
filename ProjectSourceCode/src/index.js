@@ -544,28 +544,16 @@ app.get('/dashboard', async (req, res) => {
     `, [username]);
 
     // Mock study groups (you can create a study_groups table later)
-    const studyGroups = [
-      {
-        name: 'Calculus Study Group',
-        category: 'Mathematics',
-        date: 'Nov 25, 2024',
-        time: '3:00 PM - 5:00 PM',
-        participants: 4,
-        maxParticipants: 6,
-        hostName: 'Sarah M.',
-        hostInitials: 'SM'
-      },
-      {
-        name: 'History Final Prep',
-        category: 'History',
-        date: 'Nov 26, 2024',
-        time: '6:00 PM - 8:00 PM',
-        participants: 5,
-        maxParticipants: 8,
-        hostName: 'Alex K.',
-        hostInitials: 'AK'
-      }
-    ];
+    const studyGroups = await db.any(`
+      SELECT sg.*,
+        COUNT(sgm.username) AS participate
+      FROM study_groups sg
+      LEFT JOIN study_group_members sgm ON sg.id = sgm.study_group_id
+      WHERE sg.creator_username = $1 OR sgm.username = $1
+      GROUP BY sg.id
+      ORDER BY sg.date ASC
+      LIMIT 5
+    `, [username]);
 
     res.render('pages/dashboard.hbs', {
       title: 'Dashboard - StudyBuddie',
