@@ -1,0 +1,498 @@
+{{!< layouts/main}}
+
+<div class="page dashboard">
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div>
+        <h1 class="welcome-title">Welcome back, {{user.username}}! 👋</h1>
+        <p class="welcome-subtitle">Here's what's happening with your studies today.</p>
+      </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <section class="summary-cards">
+      <div class="summary-card">
+        <div class="summary-icon">📚</div>
+        <div class="summary-content">
+          <div class="summary-label">Active Assignments</div>
+          <div class="summary-value">{{activeAssignmentsCount}}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">👥</div>
+        <div class="summary-content">
+          <div class="summary-label">Study Groups</div>
+          <div class="summary-value">{{studyGroupsCount}}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-content">
+          <div class="summary-label">Goals Completed</div>
+          <div class="summary-value">{{goalsCompleted}}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📈</div>
+        <div class="summary-content">
+          <div class="summary-label">This Week</div>
+          <div class="summary-value">{{weeklyProgress}}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+      <!-- Left Column: Upcoming Assignments -->
+      <section class="assignments-section">
+        <div class="section-header">
+          <h2>Upcoming Assignments</h2>
+          <a href="/calendar" class="btn-add">+ Add Assignment</a>
+        </div>
+        <div class="assignments-list">
+          {{#if assignments.length}}
+            {{#each assignments}}
+              <div class="assignment-card">
+                <div class="assignment-info">
+                  <h3 class="assignment-name">{{this.name}}</h3>
+                  <p class="assignment-course">{{this.course}}</p>
+                  <div class="assignment-meta">
+                    <span class="assignment-due">
+                      <span class="icon">🕐</span>
+                      {{this.dueDate}}
+                    </span>
+                    <span class="priority-badge priority-{{this.priority}}">{{this.priority}}</span>
+                  </div>
+                </div>
+                <button class="btn-mark-done" onclick="markAssignmentDone('{{this.name}}')">Mark Done</button>
+              </div>
+            {{/each}}
+          {{else}}
+            <div class="empty-state">
+              <p>No upcoming assignments. Great job! 🎉</p>
+            </div>
+          {{/if}}
+        </div>
+      </section>
+
+      <!-- Right Column: Study Groups -->
+      <section class="study-groups-section">
+        <div class="section-header">
+          <h2>Group Study Sessions</h2>
+          <a href="/calendar" class="btn-add">+ Create Session</a>
+        </div>
+        <div class="study-groups-list">
+          {{#if studyGroups.length}}
+            {{#each studyGroups}}
+              <div class="study-group-card">
+                <div class="group-header">
+                  <h3 class="group-name">{{this.name}}</h3>
+                  <span class="group-tag tag-{{this.category}}">{{this.category}}</span>
+                </div>
+                <div class="group-details">
+                  <div class="group-date">
+                    <span class="icon">📅</span>
+                    {{this.date}}
+                  </div>
+                  <div class="group-time">
+                    <span class="icon">🕐</span>
+                    {{this.time}}
+                  </div>
+                  <div class="group-participants">
+                    <span class="icon">👥</span>
+                    {{this.participants}}/{{this.maxParticipants}} participants
+                  </div>
+                  <div class="group-host">
+                    <span class="host-avatar">{{this.hostInitials}}</span>
+                    Hosted by {{this.hostName}}
+                  </div>
+                </div>
+                <button class="btn-join">Join</button>
+              </div>
+            {{/each}}
+          {{else}}
+            <div class="empty-state">
+              <p>No study sessions scheduled. Create one to get started!</p>
+            </div>
+          {{/if}}
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dashboard {
+    padding: 32px 24px;
+    min-height: calc(100vh - 64px);
+    background: #f6f8fa;
+  }
+
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Header */
+  .dashboard-header {
+    margin-bottom: 32px;
+  }
+
+  .welcome-title {
+    font-size: 36px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 8px;
+  }
+
+  .welcome-subtitle {
+    font-size: 16px;
+    color: #57606a;
+    margin: 0;
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .summary-card {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 2px rgba(27,31,36,0.06);
+  }
+
+  .summary-icon {
+    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f6f8fa;
+    border-radius: 8px;
+  }
+
+  .summary-content {
+    flex: 1;
+  }
+
+  .summary-label {
+    font-size: 14px;
+    color: #57606a;
+    margin-bottom: 4px;
+  }
+
+  .summary-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: #24292f;
+  }
+
+  /* Dashboard Grid */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* Section Styles */
+  .assignments-section,
+  .study-groups-section {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(27,31,36,0.06);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f6f8fa;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0;
+  }
+
+  .btn-add {
+    padding: 8px 16px;
+    background: #24292f;
+    color: #ffffff;
+    border: 1px solid #24292f;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-add:hover {
+    background: #000;
+    border-color: #000;
+  }
+
+  /* Assignments List */
+  .assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .assignment-card {
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+  }
+
+  .assignment-card:hover {
+    border-color: #24292f;
+    box-shadow: 0 2px 8px rgba(27,31,36,0.08);
+  }
+
+  .assignment-info {
+    flex: 1;
+  }
+
+  .assignment-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 4px;
+  }
+
+  .assignment-course {
+    font-size: 14px;
+    color: #57606a;
+    margin: 0 0 12px;
+  }
+
+  .assignment-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .assignment-due {
+    font-size: 13px;
+    color: #57606a;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .icon {
+    font-size: 14px;
+  }
+
+  .priority-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .priority-high {
+    background: #ffebe9;
+    color: #cf222e;
+  }
+
+  .priority-medium {
+    background: #fff8c5;
+    color: #9a6700;
+  }
+
+  .priority-low {
+    background: #dafbe1;
+    color: #1a7f37;
+  }
+
+  .btn-mark-done {
+    padding: 8px 16px;
+    background: #ffffff;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-mark-done:hover {
+    background: #f6f8fa;
+    border-color: #24292f;
+  }
+
+  /* Study Groups List */
+  .study-groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .study-group-card {
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+
+  .study-group-card:hover {
+    border-color: #24292f;
+    box-shadow: 0 2px 8px rgba(27,31,36,0.08);
+  }
+
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .group-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0;
+  }
+
+  .group-tag {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .tag-Mathematics {
+    background: #ddf4ff;
+    color: #0969da;
+  }
+
+  .tag-History {
+    background: #f6f8fa;
+    color: #57606a;
+  }
+
+  .tag-Science {
+    background: #dafbe1;
+    color: #1a7f37;
+  }
+
+  .group-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .group-details > div {
+    font-size: 14px;
+    color: #57606a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .group-host {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .host-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0969da;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .btn-join {
+    width: 100%;
+    padding: 10px;
+    background: #0969da;
+    color: #ffffff;
+    border: 1px solid #0969da;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-join:hover {
+    background: #0860ca;
+    border-color: #0860ca;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #57606a;
+  }
+
+  .empty-state p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .welcome-title {
+      font-size: 28px;
+    }
+
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard {
+      padding: 24px 16px;
+    }
+  }
+</style>
+
+<script>
+  function markAssignmentDone(assignmentName) {
+    // TODO: Implement assignment completion
+    alert('Assignment "' + assignmentName + '" marked as done!');
+    // You can add AJAX call here to update the database
+  }
+</script>
+

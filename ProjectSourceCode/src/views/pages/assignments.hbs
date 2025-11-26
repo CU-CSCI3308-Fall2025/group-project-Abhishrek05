@@ -1,0 +1,244 @@
+{{!< layouts/main}}
+
+<div class="page assignments-page">
+  <div class="assignments-container">
+    <header class="assignments-header">
+      <div>
+        <h1>Assignments</h1>
+        <p class="subtitle">Manage your assignments</p>
+      </div>
+      <a href="/calendar" class="btn-add">+ Add Assignment</a>
+    </header>
+
+    <section class="assignments-list-section">
+      {{#if assignments.length}}
+        {{#each assignments}}
+          <div class="assignment-card">
+            <div class="assignment-info">
+              <h3 class="assignment-name">{{this.name}}</h3>
+              <p class="assignment-course">{{this.course}}</p>
+              <div class="assignment-meta">
+                <span class="assignment-due">
+                  <span class="icon">🕐</span>
+                  Due: {{this.dueDate}}
+                </span>
+                <span class="priority-badge priority-{{this.priority}}">{{this.priority}}</span>
+              </div>
+              {{#if this.description}}
+                <p class="assignment-description">{{this.description}}</p>
+              {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      {{else}}
+        <!-- Dummy Assignment -->
+        <div class="assignment-card">
+          <div class="assignment-info">
+            <h3 class="assignment-name">Data Structures Final Project</h3>
+            <p class="assignment-course">CS101</p>
+            <div class="assignment-meta">
+              <span class="assignment-due">
+                <span class="icon">🕐</span>
+                Due: Dec 15, 2024
+              </span>
+              <span class="priority-badge priority-high">high</span>
+            </div>
+            <p class="assignment-description">Implement a binary search tree with insertion, deletion, and traversal operations. Include unit tests and documentation.</p>
+          </div>
+        </div>
+      {{/if}}
+    </section>
+  </div>
+</div>
+
+<style>
+  .assignments-page {
+    padding: 0 !important;
+    min-height: calc(100vh - 64px);
+    background: #f6f8fa;
+    display: block !important;
+    place-items: unset !important;
+  }
+
+  .assignments-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 24px;
+  }
+
+  .assignments-header {
+    position: sticky;
+    top: 64px;
+    z-index: 100;
+    background: #f6f8fa;
+    padding: 32px 0 24px 0;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .assignments-header h1 {
+    font-size: 36px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 8px;
+  }
+
+  .assignments-header .subtitle {
+    font-size: 16px;
+    color: #57606a;
+    margin: 0;
+  }
+
+  .btn-add {
+    padding: 10px 20px;
+    background: #24292f;
+    color: #ffffff;
+    border: 1px solid #24292f;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-add:hover {
+    background: #000;
+    border-color: #000;
+  }
+
+  .assignments-list-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 32px;
+  }
+
+  .assignment-card {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(27, 31, 36, 0.06);
+  }
+
+  .assignment-card:hover {
+    border-color: #24292f;
+    box-shadow: 0 4px 12px rgba(27, 31, 36, 0.1);
+  }
+
+  .assignment-info {
+    flex: 1;
+  }
+
+  .assignment-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 8px;
+  }
+
+  .assignment-course {
+    font-size: 14px;
+    color: #57606a;
+    margin: 0 0 12px;
+  }
+
+  .assignment-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .assignment-due {
+    font-size: 14px;
+    color: #57606a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .icon {
+    font-size: 14px;
+  }
+
+  .priority-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .priority-high {
+    background: #ffebe9;
+    color: #cf222e;
+  }
+
+  .priority-medium {
+    background: #fff8c5;
+    color: #9a6700;
+  }
+
+  .priority-low {
+    background: #dafbe1;
+    color: #1a7f37;
+  }
+
+  .assignment-description {
+    font-size: 14px;
+    color: #57606a;
+    line-height: 1.6;
+    margin: 12px 0 0 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+  }
+
+  .empty-state p {
+    font-size: 16px;
+    color: #57606a;
+    margin: 0 0 24px;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .assignments-container {
+      padding: 0 16px;
+    }
+
+    .assignments-header {
+      padding-top: 24px;
+      flex-direction: column;
+    }
+
+    .assignments-header h1 {
+      font-size: 28px;
+    }
+
+    .btn-add {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .assignment-meta {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

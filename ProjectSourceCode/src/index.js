@@ -251,6 +251,11 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
 });
 
+// Register Handlebars helper for equality check
+hbs.handlebars.registerHelper('eq', function(a, b) {
+  return a === b;
+});
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -335,7 +340,10 @@ app.use(
 
 // Display HTML for Register page
 app.get('/register', (req, res) => {
-  res.render('pages/register.hbs', {})
+  res.render('pages/register.hbs', {
+    title: 'Register - StudyBuddie',
+    user: null
+  })
 });
 
 // Register
@@ -374,7 +382,11 @@ app.post('/register', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.render('pages/login.hbs', {})
+  res.render('pages/login.hbs', {
+    title: 'Login - StudyBuddie',
+    user: null,
+    layout: false
+  })
 });
 
 // app.post('/login', async (req, res) => {
@@ -432,7 +444,7 @@ app.post('/login', async (req, res) => {
     // Password OK → log in
     req.session.user = user;
     req.session.save(() => {
-      res.redirect('/calendar');
+      res.redirect('/dashboard');
     });
 
   } catch (error) {
@@ -445,6 +457,14 @@ app.post('/login', async (req, res) => {
 });
 
 
+// Homepage route - accessible without authentication
+app.get('/', (req, res) => {
+  res.render('pages/homepage.hbs', {
+    title: 'StudyBuddie - Your Study Companion',
+    user: req.session.user
+  });
+});
+
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -454,8 +474,132 @@ const auth = (req, res, next) => {
 
 app.use(auth);
 
+// Discover route - redirects to dashboard
+app.get('/discover', (req, res) => {
+  res.redirect('/dashboard');
+});
+
+// Dashboard route - shows user's personal homepage
+app.get('/dashboard', async (req, res) => {
+  try {
+    const username = req.session.user.username;
+    
+    // Get user's assignments
+    const assignments = await db.any(`
+      SELECT a.name, a.description, a.course, a.due_at, a.points, a.is_group
+      FROM assignments a
+      INNER JOIN assignment_friends af ON a.name = af.assignment_name
+      WHERE af.user_username = $1
+      AND a.due_at > NOW()
+      ORDER BY a.due_at ASC
+      LIMIT 10
+    `, [username]);
+
+    // Format assignments with priority and due date
+    const formattedAssignments = assignments.map(assignment => {
+      const dueDate = new Date(assignment.due_at);
+      const now = new Date();
+      const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+      
+      let dueDateText;
+      if (daysUntilDue === 0) {
+        dueDateText = 'Today';
+      } else if (daysUntilDue === 1) {
+        dueDateText = 'Tomorrow';
+      } else {
+        dueDateText = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+
+      // Determine priority based on days until due
+      let priority = 'low';
+      if (daysUntilDue <= 1) {
+        priority = 'high';
+      } else if (daysUntilDue <= 3) {
+        priority = 'medium';
+      }
+
+      return {
+        name: assignment.name,
+        course: assignment.course || 'No Course',
+        dueDate: dueDateText,
+        priority: priority,
+        description: assignment.description
+      };
+    });
+
+    // Get friend count (study groups approximation)
+    const friendCount = await db.oneOrNone(`
+      SELECT COUNT(*) as count
+      FROM friendList
+      WHERE user_username = $1
+    `, [username]);
+
+    // Get total assignments count
+    const activeAssignments = await db.oneOrNone(`
+      SELECT COUNT(*) as count
+      FROM assignments a
+      INNER JOIN assignment_friends af ON a.name = af.assignment_name
+      WHERE af.user_username = $1
+      AND a.due_at > NOW()
+    `, [username]);
+
+    // Mock study groups (you can create a study_groups table later)
+    const studyGroups = [
+      {
+        name: 'Calculus Study Group',
+        category: 'Mathematics',
+        date: 'Nov 25, 2024',
+        time: '3:00 PM - 5:00 PM',
+        participants: 4,
+        maxParticipants: 6,
+        hostName: 'Sarah M.',
+        hostInitials: 'SM'
+      },
+      {
+        name: 'History Final Prep',
+        category: 'History',
+        date: 'Nov 26, 2024',
+        time: '6:00 PM - 8:00 PM',
+        participants: 5,
+        maxParticipants: 8,
+        hostName: 'Alex K.',
+        hostInitials: 'AK'
+      }
+    ];
+
+    res.render('pages/dashboard.hbs', {
+      title: 'Dashboard - StudyBuddie',
+      user: req.session.user,
+      currentPage: 'dashboard',
+      assignments: formattedAssignments,
+      activeAssignmentsCount: activeAssignments ? parseInt(activeAssignments.count) : 0,
+      studyGroupsCount: studyGroups.length,
+      studyGroups: studyGroups,
+      goalsCompleted: 12, // Mock data for now
+      weeklyProgress: '+25%' // Mock data for now
+    });
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.render('pages/dashboard.hbs', {
+      title: 'Dashboard - StudyBuddie',
+      user: req.session.user,
+      currentPage: 'dashboard',
+      assignments: [],
+      activeAssignmentsCount: 0,
+      studyGroupsCount: 0,
+      studyGroups: [],
+      goalsCompleted: 0,
+      weeklyProgress: '0%'
+    });
+  }
+});
+
 app.get('/calendar', (req, res) => {
-  res.render('pages/calendar.hbs', {}) // ! Calendar Page still needs to get added
+  res.render('pages/calendar.hbs', {
+    title: 'Calendar',
+    user: req.session.user,
+    currentPage: 'calendar'
+  }) // ! Calendar Page still needs to get added
 });
 
 app.get('/friends', async (req, res) => {
@@ -563,18 +707,171 @@ app.post('/friends/remove', async (req, res) => {
 
 
 app.get('/game', (req, res) => {
-  res.render('pages/game.hbs', {}) // ! Game Page still needs to get added
+  res.render('pages/game.hbs', {
+    title: 'Game',
+    user: req.session.user,
+    currentPage: 'game'
+  }) // ! Game Page still needs to get added
+});
+
+// Placeholder routes for navbar links
+app.get('/add-buddies', (req, res) => {
+  res.render('pages/add-buddies.hbs', {
+    title: 'Add Buddies - StudyBuddie',
+    user: req.session.user,
+    currentPage: 'add-buddies'
+  });
+});
+
+app.get('/study-groups', (req, res) => {
+  res.render('pages/study-groups.hbs', {
+    title: 'Study Groups - StudyBuddie',
+    user: req.session.user,
+    currentPage: 'study-groups'
+  });
+});
+
+app.get('/assignments', (req, res) => {
+  res.render('pages/assignments.hbs', {
+    title: 'Assignments - StudyBuddie',
+    user: req.session.user,
+    currentPage: 'assignments'
+  });
+});
+
+// Profile page
+app.get('/profile', async (req, res) => {
+  try {
+    if (!req.session.user) {
+      console.log('Profile: No user session, redirecting to login');
+      return res.redirect('/login');
+    }
+    
+    const username = req.session.user.username;
+    console.log('Profile: Loading profile for user:', username);
+    
+    // Get user data with bio and profile_picture (handle case where columns don't exist yet)
+    let user;
+    try {
+      user = await db.oneOrNone(`
+        SELECT username, email, institution, 
+               COALESCE(bio, '') as bio, 
+               COALESCE(profile_picture, '') as profile_picture
+        FROM users 
+        WHERE username = $1
+      `, [username]);
+    } catch (dbError) {
+      console.log('Profile: Bio/picture columns may not exist, using basic query');
+      // If columns don't exist, just get basic user info
+      user = await db.oneOrNone(`
+        SELECT username, email, institution
+        FROM users 
+        WHERE username = $1
+      `, [username]);
+      if (user) {
+        user.bio = '';
+        user.profile_picture = '';
+      }
+    }
+    
+    if (user) {
+      console.log('Profile: Rendering profile page for:', username);
+      res.render('pages/profile.hbs', {
+        title: 'Profile - StudyBuddie',
+        user: user,
+        currentPage: 'profile'
+      });
+    } else {
+      console.log('Profile: User not found, redirecting to dashboard');
+      res.redirect('/dashboard');
+    }
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// Update bio route
+app.post('/profile/bio', async (req, res) => {
+  try {
+    const username = req.session.user.username;
+    const { bio } = req.body;
+    
+    // Check if bio column exists, if not we'll handle it gracefully
+    await db.none(`
+      UPDATE users 
+      SET bio = $1 
+      WHERE username = $2
+    `, [bio || '', username]);
+    
+    // Update session
+    req.session.user.bio = bio || '';
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Bio update error:', error);
+    // If column doesn't exist, we'll need to add it
+    if (error.message.includes('column "bio" does not exist')) {
+      try {
+        await db.none('ALTER TABLE users ADD COLUMN bio TEXT');
+        await db.none('UPDATE users SET bio = $1 WHERE username = $2', [req.body.bio || '', req.session.user.username]);
+        req.session.user.bio = req.body.bio || '';
+        res.json({ success: true });
+      } catch (alterError) {
+        console.error('Alter table error:', alterError);
+        res.json({ success: false, message: 'Database error' });
+      }
+    } else {
+      res.json({ success: false, message: error.message });
+    }
+  }
+});
+
+// Update profile picture route (using base64 for simplicity)
+app.post('/profile/picture', async (req, res) => {
+  try {
+    const username = req.session.user.username;
+    const { imageData } = req.body; // Expecting base64 image data
+    
+    if (!imageData) {
+      return res.json({ success: false, message: 'No image data provided' });
+    }
+    
+    // Check if profile_picture column exists, if not add it
+    try {
+      await db.none(`
+        UPDATE users 
+        SET profile_picture = $1 
+        WHERE username = $2
+      `, [imageData, username]);
+    } catch (error) {
+      if (error.message.includes('column "profile_picture" does not exist')) {
+        await db.none('ALTER TABLE users ADD COLUMN profile_picture TEXT');
+        await db.none('UPDATE users SET profile_picture = $1 WHERE username = $2', 
+          [imageData, username]);
+      } else {
+        throw error;
+      }
+    }
+    
+    // Update session
+    req.session.user.profile_picture = imageData;
+    
+    res.json({ success: true, message: 'Profile picture updated' });
+  } catch (error) {
+    console.error('Profile picture update error:', error);
+    res.json({ success: false, message: error.message });
+  }
 });
 
 app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
+  req.session.destroy((err) => {
     if(err) {
       console.error('Error during logout:', err);
-      return res.render('pages/logout', { message: 'Error logging out. Please try again.', error: true });
+      return res.redirect('/login');
     }
-    return res.render('pages/logout', { message: 'Successfully logged out!' });
+    res.redirect('/login');
   });
-  
 });
 
 

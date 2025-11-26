@@ -1,0 +1,493 @@
+{{!< layouts/main}}
+
+<div class="page profile-page">
+  <div class="profile-container">
+    <div class="profile-header">
+      <h1>Account Settings</h1>
+      <p class="profile-subtitle">Manage your account information and preferences</p>
+    </div>
+
+    <div class="profile-content">
+      <!-- Profile Picture Section -->
+      <section class="profile-section">
+        <h2>Profile Picture</h2>
+        <div class="profile-picture-section">
+          <div class="profile-picture-preview">
+            {{#if user.profile_picture}}
+              <img src="{{user.profile_picture}}" alt="Profile Picture" id="profileImagePreview" class="profile-image">
+            {{else}}
+              <div class="profile-image-placeholder" id="profileImagePreview">
+                <span class="placeholder-text">{{user.username.[0]}}</span>
+              </div>
+            {{/if}}
+          </div>
+          <form id="profilePictureForm" enctype="multipart/form-data">
+            <input type="file" id="profilePictureInput" name="profilePicture" accept="image/*" style="display: none;">
+            <button type="button" class="btn-secondary" onclick="document.getElementById('profilePictureInput').click()">
+              Change Picture
+            </button>
+            <button type="button" class="btn-remove" onclick="removeProfilePicture()" style="display: none;">
+              Remove Picture
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Bio Section -->
+      <section class="profile-section">
+        <h2>Bio</h2>
+        <form id="bioForm">
+          <div class="field">
+            <label for="bio">Tell us about yourself</label>
+            <textarea 
+              id="bio" 
+              name="bio" 
+              rows="4" 
+              placeholder="Write a short bio about yourself..."
+              maxlength="500"
+            >{{user.bio}}</textarea>
+            <small class="char-count"><span id="charCount">0</span>/500 characters</small>
+          </div>
+          <button type="submit" class="btn-primary">Save Bio</button>
+        </form>
+      </section>
+
+      <!-- Account Information Section -->
+      <section class="profile-section">
+        <h2>Account Information</h2>
+        <div class="account-info">
+          <div class="info-row">
+            <span class="info-label">Username:</span>
+            <span class="info-value">{{user.username}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">{{user.email}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Institution:</span>
+            <span class="info-value">{{user.institution}}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions Section -->
+      <section class="profile-section">
+        <h2>Actions</h2>
+        <div class="profile-actions">
+          <a href="/logout" class="btn-logout">Logout</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+  .profile-page {
+    padding: 32px 24px;
+    min-height: calc(100vh - 64px);
+    background: #f6f8fa;
+  }
+
+  .profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .profile-header {
+    margin-bottom: 32px;
+  }
+
+  .profile-header h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 8px;
+  }
+
+  .profile-subtitle {
+    font-size: 16px;
+    color: #57606a;
+    margin: 0;
+  }
+
+  .profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .profile-section {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(27,31,36,0.06);
+  }
+
+  .profile-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f6f8fa;
+  }
+
+  /* Profile Picture Section */
+  .profile-picture-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .profile-picture-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #d0d7de;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f6f8fa;
+    flex-shrink: 0;
+  }
+
+  .profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+    color: #ffffff;
+    font-size: 48px;
+    font-weight: 700;
+  }
+
+  .placeholder-text {
+    text-transform: uppercase;
+  }
+
+  .profile-picture-section form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Bio Section */
+  .field {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #24292f;
+  }
+
+  .field textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #24292f;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+
+  .field textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .char-count {
+    font-size: 12px;
+    color: #57606a;
+    text-align: right;
+  }
+
+  /* Account Information */
+  .account-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f6f8fa;
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #57606a;
+  }
+
+  .info-value {
+    font-size: 14px;
+    color: #24292f;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    padding: 12px 24px;
+    background: #3b82f6;
+    color: #ffffff;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+  }
+
+  .btn-secondary {
+    padding: 10px 20px;
+    background: #ffffff;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: #f6f8fa;
+    border-color: #24292f;
+  }
+
+  .btn-remove {
+    padding: 10px 20px;
+    background: #ffffff;
+    color: #d1242f;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-remove:hover {
+    background: #fff5f5;
+    border-color: #d1242f;
+  }
+
+  .btn-logout {
+    padding: 12px 24px;
+    background: #d1242f;
+    color: #ffffff;
+    border: 1px solid #d1242f;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .btn-logout:hover {
+    background: #a40e26;
+    border-color: #a40e26;
+  }
+
+  .profile-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .profile-picture-section {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .info-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  }
+</style>
+
+<script>
+  // Character counter for bio
+  const bioTextarea = document.getElementById('bio');
+  const charCount = document.getElementById('charCount');
+  
+  if (bioTextarea) {
+    charCount.textContent = bioTextarea.value.length;
+    
+    bioTextarea.addEventListener('input', (e) => {
+      charCount.textContent = e.target.value.length;
+    });
+  }
+
+  // Profile picture preview
+  const profilePictureInput = document.getElementById('profilePictureInput');
+  const profileImagePreview = document.getElementById('profileImagePreview');
+  const removeButton = document.querySelector('.btn-remove');
+
+  if (profilePictureInput) {
+    profilePictureInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          // Replace placeholder with image
+          if (profileImagePreview.classList.contains('profile-image-placeholder')) {
+            profileImagePreview.outerHTML = '<img src="' + event.target.result + '" alt="Profile Picture" id="profileImagePreview" class="profile-image">';
+          } else {
+            profileImagePreview.src = event.target.result;
+          }
+          if (removeButton) {
+            removeButton.style.display = 'block';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  function removeProfilePicture() {
+    // Reset to placeholder
+    const preview = document.getElementById('profileImagePreview');
+    const username = '{{user.username}}';
+    const firstLetter = username ? username[0].toUpperCase() : 'U';
+    
+    preview.outerHTML = `<div class="profile-image-placeholder" id="profileImagePreview">
+      <span class="placeholder-text">${firstLetter}</span>
+    </div>`;
+    
+    if (removeButton) {
+      removeButton.style.display = 'none';
+    }
+    
+    // Clear file input
+    if (profilePictureInput) {
+      profilePictureInput.value = '';
+    }
+  }
+
+  // Bio form submission
+  const bioForm = document.getElementById('bioForm');
+  if (bioForm) {
+    bioForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const bio = document.getElementById('bio').value;
+      
+      try {
+        const response = await fetch('/profile/bio', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ bio })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          alert('Bio updated successfully!');
+        } else {
+          alert('Error updating bio: ' + (data.message || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating bio. Please try again.');
+      }
+    });
+  }
+
+  // Profile picture upload (using base64)
+  if (profilePictureInput) {
+    profilePictureInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Image size must be less than 2MB.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const imageData = event.target.result; // base64 string
+        
+        // Update preview immediately
+        const preview = document.getElementById('profileImagePreview');
+        if (preview.classList && preview.classList.contains('profile-image-placeholder')) {
+          preview.outerHTML = '<img src="' + imageData + '" alt="Profile Picture" id="profileImagePreview" class="profile-image">';
+        } else {
+          preview.src = imageData;
+        }
+        if (removeButton) {
+          removeButton.style.display = 'block';
+        }
+        
+        // Upload to server
+        try {
+          const response = await fetch('/profile/picture', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imageData })
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+            // Success - preview already updated
+          } else {
+            alert('Error updating profile picture: ' + (data.message || 'Unknown error'));
+            // Revert preview on error
+            removeProfilePicture();
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error updating profile picture. Please try again.');
+          removeProfilePicture();
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+</script>
+
