@@ -1,14 +1,225 @@
-{{!< layouts/main}}
+{{!< layouts/main }}
 
 <div class="page">
   <div class="container">
     <main>
       <div class="card">
         <h1>Study Groups</h1>
-        <p class="subtitle">Join or create study groups</p>
-        <p>This page is coming soon!</p>
+        <p class="subtitle">manage friends & group study sessions</p>
+
+        <!-- Create Group Button -->
+        <button class="btn-primary" id="openCreateGroupModal" style="width: 200px; margin-bottom: 16px;">
+          + Create Study Group
+        </button>
+
+        <div class="groups-section">
+          <h2>Your Study Groups</h2>
+          {{#if groups.length}}
+            <div class="group-list">
+              {{#each groups}}
+                <div class="group-item">
+                  <div>
+                    <div class="group-title">{{this.name}}</div>
+                    <div class="group-details">
+                      <strong>{{this.category}}</strong> |
+                      {{this.date}} {{this.start_time}}–{{this.end_time}}
+                      <br>
+                      Host: {{this.host_username}}
+                    </div>
+                    <div class="group-members">
+                      {{#each this.members}}
+                        <span class="member-tag">{{this}}</span>
+                      {{/each}}
+                    </div>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p>No study groups yet. Create one!</p>
+          {{/if}}
+        </div>
+
+        <hr style="margin: 24px 0;">
+
+        <div class="friends-section">
+          <h2>Your Friends</h2>
+          {{#if friends.length}}
+            <div class="friends-list">
+              {{#each friends}}
+                <div class="friend-item">
+                  <div class="friend-name">{{this}}</div>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p>You have no friends added yet.</p>
+          {{/if}}
+        </div>
       </div>
     </main>
   </div>
 </div>
 
+<!-- Create Group Modal -->
+<div id="groupModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Create Study Group</h3>
+      <button class="modal-close" id="closeModal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="createGroupForm">
+        <div class="field">
+          <span class="label-sm">GROUP NAME</span>
+          <input type="text" name="name" placeholder="Calculus Review" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">CATEGORY</span>
+          <input type="text" name="category" placeholder="Homework / Exam Prep" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">DATE</span>
+          <input type="date" name="date" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">START TIME</span>
+          <input type="time" name="start_time" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">END TIME</span>
+          <input type="time" name="end_time" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">MAX PARTICIPANTS</span>
+          <input type="number" name="max_participants" min="1" value="5" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">ADD FRIENDS</span>
+          <div class="friend-checkboxes">
+            {{#each friends}}
+              <label class="friend-checkbox">
+                <input type="checkbox" name="members" value="{{this}}">
+                {{this}}
+              </label>
+            {{/each}}
+          </div>
+        </div>
+
+        <button class="btn-primary" type="submit">Create Group</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .group-list, .friends-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .group-item {
+    padding: 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    background: #f6f8fa;
+  }
+
+  .group-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .group-details {
+    font-size: 13px;
+    color: #57606a;
+    margin-bottom: 8px;
+  }
+
+  .group-members {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .member-tag {
+    background: #e8f0fe;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  .friend-item {
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .friend-name {
+    font-size: 16px;
+  }
+
+  .friend-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0;
+  }
+</style>
+
+<script>
+  const modal = document.getElementById("groupModal");
+  const openBtn = document.getElementById("openCreateGroupModal");
+  const closeBtn = document.getElementById("closeModal");
+  const form = document.getElementById("createGroupForm");
+
+  openBtn.onclick = () => {
+    modal.style.display = "block";
+  };
+
+  closeBtn.onclick = () => {
+    modal.style.display = "none";
+  };
+
+  window.onclick = (e) => {
+    if (e.target === modal) modal.style.display = "none";
+  };
+
+  // Submit study group
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const payload = {
+      name: formData.get("name"),
+      category: formData.get("category"),
+      date: formData.get("date"),
+      start_time: formData.get("start_time"),
+      end_time: formData.get("end_time"),
+      max_participants: formData.get("max_participants"),
+      members: formData.getAll("members")
+    };
+
+    const res = await fetch("/api/study-groups/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert("Error creating group.");
+    }
+  });
+</script>
