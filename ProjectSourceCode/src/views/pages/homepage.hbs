@@ -1,0 +1,318 @@
+{{!< layouts/main}}
+
+<div class="page homepage">
+  <div class="homepage-container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="logo-section">
+          <img src="/css/images/studyBuddie.png" alt="StudyBuddie Logo" class="homepage-logo">
+        </div>
+        <h1 class="hero-title">Welcome to StudyBuddie</h1>
+        <p class="hero-subtitle">Your all-in-one platform for organized studying, collaborative learning, and academic success.</p>
+        
+        {{#if user}}
+          <div class="hero-actions">
+            <a href="/calendar" class="btn-primary">Go to Calendar</a>
+            <a href="/discover" class="btn-secondary">Discover</a>
+          </div>
+        {{else}}
+          <div class="hero-actions">
+            <a href="/register" class="btn-primary">Get Started</a>
+            <a href="/login" class="btn-secondary">Login</a>
+          </div>
+        {{/if}}
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+      <h2 class="features-title">Key Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon calendar-icon">📅</div>
+          <h3>Calendar</h3>
+          <p>Organize your study schedule, track assignments, and manage group meetings all in one place.</p>
+          {{#if user}}
+            <a href="/calendar" class="feature-link">View Calendar →</a>
+          {{else}}
+            <a href="/register" class="feature-link">Get Started →</a>
+          {{/if}}
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon game-icon">🎮</div>
+          <h3>Study Games</h3>
+          <p>Make learning fun with interactive study games that help you retain information better.</p>
+          {{#if user}}
+            <a href="/game" class="feature-link">Play Games →</a>
+          {{else}}
+            <a href="/register" class="feature-link">Get Started →</a>
+          {{/if}}
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon discover-icon">🔍</div>
+          <h3>Discover</h3>
+          <p>Connect with study partners, find study groups, and discover new learning opportunities.</p>
+          {{#if user}}
+            <a href="/discover" class="feature-link">Explore →</a>
+          {{else}}
+            <a href="/register" class="feature-link">Get Started →</a>
+          {{/if}}
+        </div>
+      </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+      <div class="benefits-content">
+        <h2>Why Choose StudyBuddie?</h2>
+        <ul class="benefits-list">
+          <li>✓ Stay organized with an intuitive calendar system</li>
+          <li>✓ Gamify your learning experience</li>
+          <li>✓ Connect with peers and study groups</li>
+          <li>✓ Track your academic progress</li>
+          <li>✓ Manage assignments and deadlines</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<style>
+  .homepage {
+    padding: 48px 24px;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #f6f8fa 0%, #ffffff 100%);
+  }
+
+  .homepage-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Hero Section */
+  .hero {
+    text-align: center;
+    padding: 64px 0;
+    margin-bottom: 80px;
+  }
+
+  .hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .logo-section {
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .homepage-logo {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  }
+
+  .hero-title {
+    font-size: 48px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 16px;
+    letter-spacing: -0.5px;
+  }
+
+  .hero-subtitle {
+    font-size: 20px;
+    color: #57606a;
+    margin: 0 0 40px;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    font-size: 16px;
+  }
+
+  .btn-primary {
+    background: #24292f;
+    color: #ffffff;
+    border: 1px solid #24292f;
+  }
+
+  .btn-primary:hover {
+    background: #000;
+    border-color: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .btn-secondary {
+    background: #ffffff;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+  }
+
+  .btn-secondary:hover {
+    background: #f6f8fa;
+    border-color: #24292f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  /* Features Section */
+  .features {
+    margin-bottom: 80px;
+  }
+
+  .features-title {
+    font-size: 36px;
+    font-weight: 600;
+    color: #24292f;
+    text-align: center;
+    margin: 0 0 48px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 32px;
+  }
+
+  .feature-card {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 1px 2px rgba(27,31,36,0.06);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(27,31,36,0.12);
+    border-color: #24292f;
+  }
+
+  .feature-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+
+  .feature-card h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 12px;
+  }
+
+  .feature-card p {
+    font-size: 16px;
+    color: #57606a;
+    line-height: 1.6;
+    margin: 0 0 20px;
+    flex: 1;
+  }
+
+  .feature-link {
+    color: #0969da;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+
+  .feature-link:hover {
+    color: #0860ca;
+    text-decoration: underline;
+  }
+
+  /* Benefits Section */
+  .benefits {
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    padding: 48px;
+    box-shadow: 0 1px 2px rgba(27,31,36,0.06);
+  }
+
+  .benefits-content h2 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #24292f;
+    margin: 0 0 32px;
+    text-align: center;
+  }
+
+  .benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .benefits-list li {
+    font-size: 18px;
+    color: #24292f;
+    padding: 12px 0;
+    border-bottom: 1px solid #f6f8fa;
+  }
+
+  .benefits-list li:last-child {
+    border-bottom: none;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 36px;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+    }
+
+    .homepage-logo {
+      width: 140px;
+      height: 140px;
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .benefits {
+      padding: 32px 24px;
+    }
+
+    .benefits-content h2 {
+      font-size: 28px;
+    }
+
+    .benefits-list li {
+      font-size: 16px;
+    }
+  }
+</style>
+

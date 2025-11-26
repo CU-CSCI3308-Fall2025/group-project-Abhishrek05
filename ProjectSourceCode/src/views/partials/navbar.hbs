@@ -1,0 +1,193 @@
+<nav class="navbar">
+  <div class="navbar-left">
+    <div class="navbar-logo">
+      <div class="logo-square">
+        <img src="/css/images/studyBuddie.png" alt="StudyBuddie Logo" class="logo-image">
+      </div>
+    </div>
+    <span class="navbar-brand">studyBuddie</span>
+  </div>
+  
+  <div class="navbar-links">
+    <a href="/dashboard" class="nav-link {{#if (eq currentPage 'dashboard')}}active{{/if}}">
+      <span class="nav-text">Home</span>
+    </a>
+    <a href="/add-buddies" class="nav-link {{#if (eq currentPage 'add-buddies')}}active{{/if}}">
+      <span class="nav-text">Add Buddies</span>
+    </a>
+    <a href="/study-groups" class="nav-link {{#if (eq currentPage 'study-groups')}}active{{/if}}">
+      <span class="nav-text">Study Groups</span>
+    </a>
+    <a href="/assignments" class="nav-link {{#if (eq currentPage 'assignments')}}active{{/if}}">
+      <span class="nav-text">Assignments</span>
+    </a>
+    <a href="/calendar" class="nav-link {{#if (eq currentPage 'calendar')}}active{{/if}}">
+      <span class="nav-text">Calendar</span>
+    </a>
+  </div>
+  
+  <div class="navbar-right">
+    <a href="/profile" class="user-icon" title="Profile">
+      <svg class="user-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20.59 22C20.59 18.13 16.74 15 12 15C7.26 15 3.41 18.13 3.41 22" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+</nav>
+
+<style>
+  .navbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e1e4e8;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-right: 48px;
+  }
+
+  .navbar-logo {
+    display: flex;
+    align-items: center;
+  }
+
+  .logo-square {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 4px;
+  }
+
+  .navbar-brand {
+    font-size: 20px;
+    font-weight: 700;
+    color: #3b82f6;
+    letter-spacing: -0.3px;
+  }
+
+  .navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    margin-left: 24px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #24292f;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .nav-link:hover {
+    background: #f6f8fa;
+  }
+
+  .nav-link.active {
+    background: #f3f4f6;
+    color: #24292f;
+  }
+
+
+  .nav-text {
+    display: inline-block;
+  }
+
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    margin-left: 48px;
+  }
+
+  .user-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s;
+    background: #ffffff;
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .user-icon:active {
+    transform: scale(0.95);
+  }
+
+  .user-icon:hover {
+    border-color: #3b82f6;
+    background: #f9fafb;
+  }
+
+  .user-icon-svg {
+    width: 20px;
+    height: 20px;
+    transition: all 0.2s;
+  }
+
+  .user-icon:hover .user-icon-svg path {
+    stroke: #3b82f6;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navbar {
+      padding: 0 16px;
+    }
+
+    .nav-text {
+      display: none;
+    }
+
+    .navbar-links {
+      gap: 4px;
+    }
+
+    .nav-link {
+      padding: 10px 12px;
+    }
+
+    .navbar-brand {
+      font-size: 16px;
+    }
+  }
+</style>
+
