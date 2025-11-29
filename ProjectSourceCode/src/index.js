@@ -548,8 +548,8 @@ app.get('/dashboard', async (req, res) => {
       SELECT sg.*,
         COUNT(sgm.username) AS participate
       FROM study_groups sg
-      LEFT JOIN study_group_members sgm ON sg.id = sgm.study_group_id
-      WHERE sg.creator_username = $1 OR sgm.username = $1
+      LEFT JOIN study_group_members sgm ON sg.id = sgm.group_id
+      WHERE sg.host_username = $1 OR sgm.username = $1
       GROUP BY sg.id
       ORDER BY sg.date ASC
       LIMIT 5
