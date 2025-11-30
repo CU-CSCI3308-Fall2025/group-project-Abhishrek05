@@ -14,23 +14,28 @@
 
         <div class="groups-section">
           <h2>Your Study Groups</h2>
-          {{#if groups.length}}
+          {{#if studyGroups.length}}
             <div class="group-list">
-              {{#each groups}}
+              {{#each studyGroups}}
                 <div class="group-item">
                   <div>
                     <div class="group-title">{{this.name}}</div>
                     <div class="group-details">
                       <strong>{{this.category}}</strong> |
-                      {{this.date}} {{this.start_time}}–{{this.end_time}}
+                      {{formatDate this.date}} {{formatTime this.start_time}}–{{formatTime this.end_time}}
                       <br>
                       Host: {{this.host_username}}
                     </div>
-                    <div class="group-members">
+                    {{!-- <div class="group-members">
                       {{#each this.members}}
                         <span class="member-tag">{{this}}</span>
                       {{/each}}
-                    </div>
+                    </div> --}}
+                    {{!-- Only show Edit if this user is the host --}}
+                    {{#if (eq this.host_username ../user.username)}}
+                      <button class="btn-secondary edit-btn" data-group-id="{{this.id}}">Edit</button>
+                      <button class="btn-danger delete-btn" data-group-id="{{this.id}}">Delete</button>
+                    {{/if}}
                   </div>
                 </div>
               {{/each}}
@@ -119,11 +124,74 @@
   </div>
 </div>
 
+<!-- Edit Group Modal -->
+<div id="editGroupModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Study Group</h3>
+      <button class="modal-close" id="closeEditModal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="editGroupForm">
+        <input type="hidden" name="id" id="editGroupId">
+
+        <div class="field">
+          <span class="label-sm">GROUP NAME</span>
+          <input type="text" name="name" id="editGroupName" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">CATEGORY</span>
+          <input type="text" name="category" id="editGroupCategory" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">DATE</span>
+          <input type="date" name="date" id="editGroupDate" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">START TIME</span>
+          <input type="time" name="start_time" id="editGroupStartTime" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">END TIME</span>
+          <input type="time" name="end_time" id="editGroupEndTime" required>
+        </div>
+
+        <div class="field">
+          <span class="label-sm">MAX PARTICIPANTS</span>
+          <input type="number" name="max_participants" id="editGroupMax" min="1" required>
+        </div>
+
+        <button class="btn-primary" type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <style>
+  .container {
+    display: flex;
+    justify-content: center;
+    padding: 10px; 
+  }
+
   .group-list, .friends-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .groups-section, .friends-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* centers the content horizontally */
+    width: 100%;
   }
 
   .group-item {
@@ -175,6 +243,28 @@
     gap: 6px;
     padding: 8px 0;
   }
+
+  .modal {
+    display: none;     /* hidden by default */
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    width: 800px;
+    border-radius: 8px;
+    padding-right: 40px;
+}
+
 </style>
 
 <script>
@@ -210,7 +300,7 @@
       members: formData.getAll("members")
     };
 
-    const res = await fetch("/api/study-groups/create", {
+    const res = await fetch("/study-groups/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -222,4 +312,79 @@
       alert("Error creating group.");
     }
   });
+
+  // Edit Group Modal
+  const editModal = document.getElementById("editGroupModal");
+  const closeEditBtn = document.getElementById("closeEditModal");
+  const editForm = document.getElementById("editGroupForm");
+
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const groupId = btn.dataset.groupId;
+
+      // Fetch the current group data from backend
+      const res = await fetch(`/study-groups/${groupId}`);
+      if (!res.ok) return alert("Failed to load group data.");
+
+      const group = await res.json();
+
+      // Fill the form
+      document.getElementById("editGroupId").value = group.id;
+      document.getElementById("editGroupName").value = group.name;
+      document.getElementById("editGroupCategory").value = group.category;
+      document.getElementById("editGroupDate").value = group.date;
+      document.getElementById("editGroupStartTime").value = group.start_time;
+      document.getElementById("editGroupEndTime").value = group.end_time;
+      document.getElementById("editGroupMax").value = group.max_participants;
+
+      // Show modal
+      editModal.style.display = "block";
+    });
+  });
+
+  closeEditBtn.onclick = () => {
+    editModal.style.display = "none";
+  };
+
+  // Submit edit form
+  editForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(editForm);
+    const payload = Object.fromEntries(formData.entries());
+
+    const res = await fetch(`/study-groups/edit/${payload.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      alert("Error updating group.");
+    }
+  });
+
+  //Handle delete button clicks
+  document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const groupId = btn.dataset.groupId;
+      if (!confirm('Are you sure you want to delete this study group?')) return;
+
+      const res = await fetch(`/study-groups/delete/${groupId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        btn.closest('.group-item').remove(); // remove card without reload
+      } else {
+        const data = await res.json();
+        alert('Error deleting group: ' + data.message);
+      }
+    });
+  });
+});
+
 </script>
