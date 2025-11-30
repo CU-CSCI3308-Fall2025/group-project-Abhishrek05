@@ -249,6 +249,26 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
+  helpers: {
+    // Equality check helper (you already had this)
+    eq: function(a, b) {
+      return a === b;
+    },
+
+    // Format date as YYYY-MM-DD
+    formatDate: function(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      return d.toISOString().split('T')[0];
+    },
+
+    // Optional: format time as HH:MM
+    formatTime: function(time) {
+      if (!time) return '';
+      const t = new Date(`1970-01-01T${time}Z`);
+      return t.toTimeString().slice(0, 5); // "HH:MM"
+    }
+  }
 });
 
 // Register Handlebars helper for equality check
@@ -710,13 +730,121 @@ app.get('/add-buddies', (req, res) => {
   res.redirect('/friends');
 });
 
-app.get('/study-groups', (req, res) => {
-  res.render('pages/study-groups.hbs', {
-    title: 'Study Groups - StudyBuddie',
-    user: req.session.user,
-    currentPage: 'study-groups'
-  });
+// app.get('/study-groups', (req, res) => {
+//   res.render('pages/study-groups.hbs', {
+//     title: 'Study Groups - StudyBuddie',
+//     user: req.session.user,
+//     currentPage: 'study-groups'
+//   });
+// });
+
+app.get('/study-groups', async (req, res) => {
+  try {
+    const username = req.session.user.username;
+
+    const studyGroups = await db.any(`
+      SELECT
+        sg.id,
+        sg.name,
+        sg.category,
+        sg.date,
+        sg.start_time,
+        sg.end_time,
+        sg.host_username,
+        sg.max_participants,
+        COUNT(sgm.username) AS current_participants
+      FROM study_groups sg
+      LEFT JOIN study_group_members sgm ON sg.id = sgm.group_id
+      GROUP BY sg.id
+      ORDER BY sg.date ASC, sg.start_time ASC;
+      `);
+
+      res.render('pages/study-groups.hbs', {
+        title: 'Study Groups - StudyBuddie',
+        user: req.session.user,
+        currentPage: 'study-groups',
+        studyGroups: studyGroups
+      });
+  } catch (err) {
+    console.error('Error fetching study groups:', err);
+    res.status(500).json({ success: false, message: 'Error fetching study groups' });
+  }
 });
+
+app.post('/study-groups/create', async (req, res) => {
+  try {
+    const { name, categroy, date, start_time, end_time, max_participants, members } = req.body;
+    const host_username = req.session.user.username;
+
+    const insertGroupQuery = `
+      INSERT INTO study_groups (name, category, date, start_time, end_time, host_username, max_participants)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+    `;
+    const groupResult = await db.one(insertGroupQuery, [name, categroy, date, start_time, end_time, host_username, max_participants]);
+
+    for (const m of members) {
+      await db.none(insertGroupQuery, [groupResult.id, m]);
+    }
+
+    res.status(200).json({ success: true, message: 'Study group created successfully' });
+  } catch (err) {
+    console.error('Error creating study group:', err);
+    res.status(500).json({ success: false, message: 'Error creating study group' });
+  }
+});
+
+app.get('/study-groups/:id', async (req, res) => {
+  const groupId = req.params.id;
+  const group = await db.oneOrNone('SELECT * FROM study_groups WHERE id = $1', [groupId]);
+  if (!group) {
+    return res.status(404).send('Study group not found');
+  }
+  res.json(group);
+});
+
+app.put('/study-groups/edit/:id', async (req, res) => {
+  const groupId = req.params.id;
+  const { name, category, date, start_time, end_time, max_participants } = req.body;
+  const username = req.session.user.username;
+  // Ensure only host can edit
+  const group = await db.oneOrNone('SELECT * FROM study_groups WHERE id = $1 AND host_username = $2', [groupId, username]);
+  if(!group || group.host_username !== username) { 
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+
+  await db.none(`
+    UPDATE study_groups
+    SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6
+    WHERE id = $7`, [name, category, date, start_time, end_time, max_participants, groupId]
+  );
+  res.json({ success: true, message: 'Study group updated successfully' });
+});
+
+app.delete('/study-groups/delete/:id', async (req, res) => {
+  const groupId = req.params.id;
+  const username = req.session.user.username;
+  
+  try {
+    const group = await db.oneOrNone('SELECT * FROM study_groups WHERE id = $1 AND host_username = $2', [groupId, username]);
+
+    if (!group) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (group.host_username !== username) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    //Delete the group (will also delete members due to ON DELETE CASCADE)
+    await db.none('DELETE FROM study_groups WHERE id = $1', [groupId]);
+    res.json({ success: true, message: 'Study group deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting study group:', err);
+    res.status(500).json({ success: false, message: 'Error deleting study group' });
+  }
+});
+
 
 app.get('/assignments', (req, res) => {
   res.render('pages/assignments.hbs', {
