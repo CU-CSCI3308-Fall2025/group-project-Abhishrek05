@@ -846,12 +846,70 @@ app.delete('/study-groups/delete/:id', async (req, res) => {
 });
 
 
-app.get('/assignments', (req, res) => {
-  res.render('pages/assignments.hbs', {
-    title: 'Assignments - StudyBuddie',
-    user: req.session.user,
-    currentPage: 'assignments'
-  });
+app.get('/assignments', async (req, res) => {
+  try {
+    const username = req.session.user.username;
+    
+    // Get user's assignments
+    const assignments = await db.any(`
+      SELECT a.name, a.description, a.course, a.due_at, a.points, a.is_group
+      FROM assignments a
+      INNER JOIN assignment_friends af ON a.name = af.assignment_name
+      WHERE af.user_username = $1
+      ORDER BY a.due_at ASC
+    `, [username]);
+
+    // Format assignments with priority and due date
+    const formattedAssignments = assignments.map(assignment => {
+      const dueDate = new Date(assignment.due_at);
+      const now = new Date();
+      const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+      
+      let dueDateText;
+      if (daysUntilDue === 0) {
+        dueDateText = 'Today';
+      } else if (daysUntilDue === 1) {
+        dueDateText = 'Tomorrow';
+      } else if (daysUntilDue < 0) {
+        dueDateText = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } else {
+        dueDateText = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+
+      // Determine priority based on days until due
+      let priority = 'low';
+      if (daysUntilDue < 0) {
+        priority = 'high'; // Overdue
+      } else if (daysUntilDue <= 1) {
+        priority = 'high';
+      } else if (daysUntilDue <= 3) {
+        priority = 'medium';
+      }
+
+      return {
+        name: assignment.name,
+        course: assignment.course || 'No Course',
+        dueDate: dueDateText,
+        priority: priority,
+        description: assignment.description
+      };
+    });
+
+    res.render('pages/assignments.hbs', {
+      title: 'Assignments - StudyBuddie',
+      user: req.session.user,
+      currentPage: 'assignments',
+      assignments: formattedAssignments
+    });
+  } catch (error) {
+    console.error('Assignments error:', error);
+    res.render('pages/assignments.hbs', {
+      title: 'Assignments - StudyBuddie',
+      user: req.session.user,
+      currentPage: 'assignments',
+      assignments: []
+    });
+  }
 });
 
 // Profile page
@@ -1032,8 +1090,3 @@ const PORT = process.env.PORT || 3000;
 module.exports = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
-
-
-
-
