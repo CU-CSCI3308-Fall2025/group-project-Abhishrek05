@@ -278,7 +278,7 @@ hbs.handlebars.registerHelper('eq', function(a, b) {
 
 // database configuration
 const dbConfig = {
-  host: process.env.POSTGRES_HOST || 'dpg-d4fppdshg0os73civju0-a' // the database server
+  host: process.env.POSTGRES_HOST || 'dpg-d4fppdshg0os73civju0-a', // the database server
   port: 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
