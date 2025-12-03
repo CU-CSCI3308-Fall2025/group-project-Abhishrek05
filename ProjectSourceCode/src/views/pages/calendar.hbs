@@ -87,6 +87,16 @@
             <span class="label-sm">MAX PARTICIPANTS</span>
             <input type="number" id="studyMaxParticipants" name="max_participants">
           </div>
+
+          <div class="mb-3" id="group_url_group">
+          <label for="event_remote_url" class="label-sm">Group Meeting Link</label>
+            <input 
+                type="url" 
+                class="form-control" 
+                id="event_remote_url"
+                placeholder="https://example.com/meeting" 
+                pattern="/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$/" required/>
+        </div>
         </div>
         
         <div id="assignmentFields" class="event-type-fields" style="display: none;">
@@ -594,6 +604,7 @@ updateFieldVisibility(eventTypeSelect.value);
       document.getElementById('studyStartTime').value = details.startTime || event.time || '';
       document.getElementById('studyEndTime').value = details.endTime || event.endTime || '';
       document.getElementById('studyMaxParticipants').value = details.maxParticipants || 5;
+      document.getElementById('event_remote_url').value = details.meetingLink || '';
       return;
     }
 
@@ -1023,6 +1034,7 @@ updateFieldVisibility(eventTypeSelect.value);
         startTime: document.getElementById('studyStartTime').value.trim(),
         endTime: document.getElementById('studyEndTime').value.trim(),
         maxParticipants: parseInt(document.getElementById('studyMaxParticipants').value, 10) || 0,
+        meetingLink: document.getElementById('event_remote_url').value.trim(),
       },
     };
   }
@@ -1080,38 +1092,38 @@ document.getElementById('eventForm').addEventListener('submit', (e) => {
     closeEventModal();
   }
 
-fetch("/calendar/new", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    title: payload.title,
-    description: payload.details?.category || payload.details?.description || payload.title,
-    event_date: `${selectedDate.year}-${String(selectedDate.month + 1).padStart(2,"0")}-${String(selectedDate.day).padStart(2,"0")}`,
-    start_time: payload.time || payload.details?.startTime || null,
-    end_time: payload.endTime || payload.details?.endTime || null,
-    type: type === "study_group" ? "study_group" : "assignment"
+  fetch("/calendar/new", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: payload.title,
+      description: payload.details?.category || payload.details?.description || payload.title,
+      event_date: `${selectedDate.year}-${String(selectedDate.month + 1).padStart(2,"0")}-${String(selectedDate.day).padStart(2,"0")}`,
+      start_time: payload.time || payload.details?.startTime || null,
+      end_time: payload.endTime || payload.details?.endTime || null,
+      type: type === "study_group" ? "study_group" : "assignment"
+    })
   })
-})
-.then(res => res.json())
-.then(data => {
-  if (data.success) {
-    console.log("Event created:", data.event);
-    renderCalendar();      // refresh calendar display
-    closeEventModal();     // close modal
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log("Event created:", data.event);
+      renderCalendar();      // refresh calendar display
+      closeEventModal();     // close modal
 
-    // Dynamically add study group to page
-    if (data.study_group) {
-      addStudyGroupToPage(data.study_group);
+      // Dynamically add study group to page
+      if (data.study_group) {
+        addStudyGroupToPage(data.study_group);
+      }
+    } else {
+      alert("Failed to create event.");
+      console.error(data);
     }
-  } else {
-    alert("Failed to create event.");
-    console.error(data);
-  }
-})
-.catch(err => {
-  console.error("Error posting to server:", err);
-  alert("Error creating event.");
-});
+  })
+  .catch(err => {
+    console.error("Error posting to server:", err);
+    alert("Error creating event.");
+  });
 
 
 });
@@ -1129,6 +1141,7 @@ function addStudyGroupToPage(studyGroup) {
     <p>Time: ${studyGroup.start_time || "N/A"} - ${studyGroup.end_time || "N/A"}</p>
     <p>Host: ${studyGroup.host_username}</p>
     <p>Max participants: ${studyGroup.max_participants}</p>
+    <a href="${studyGroup.meeting_link}" target="_blank">Join Meeting</a>
   `;
   container.appendChild(div);
 }

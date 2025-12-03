@@ -7,6 +7,7 @@ CREATE TABLE study_groups (
     end_time TIME NOT NULL,
     host_username VARCHAR(50) NOT NULL,
     max_participants INT NOT NULL,
+    meeting_link VARCHAR(255),
 
     FOREIGN KEY (host_username) REFERENCES users(username)
 );

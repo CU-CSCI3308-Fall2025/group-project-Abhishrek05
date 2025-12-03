@@ -949,6 +949,7 @@ app.get('/study-groups', async (req, res) => {
         sg.end_time,
         sg.host_username,
         sg.max_participants,
+        sg.meeting_link,
         COUNT(sgm.username) AS current_participants
       FROM study_groups sg
       LEFT JOIN study_group_members sgm ON sg.id = sgm.group_id
@@ -956,11 +957,18 @@ app.get('/study-groups', async (req, res) => {
       ORDER BY sg.date ASC, sg.start_time ASC;
       `);
 
+      const friends = await db.any(`
+      SELECT friend_username
+      FROM friendList
+      WHERE user_username = $1
+    `, [username]);
+
       res.render('pages/study-groups.hbs', {
         title: 'Study Groups - StudyBuddie',
         user: req.session.user,
         currentPage: 'study-groups',
-        studyGroups: studyGroups
+        studyGroups: studyGroups,
+        friends: friends.map(f => f.friend_username),
       });
   } catch (err) {
     console.error('Error fetching study groups:', err);
@@ -970,15 +978,15 @@ app.get('/study-groups', async (req, res) => {
 
 app.post('/study-groups/create', async (req, res) => {
   try {
-    const { name, category, date, start_time, end_time, max_participants, members } = req.body;
+    const { name, category, date, start_time, end_time, max_participants, meeting_link, members } = req.body;
     const host_username = req.session.user.username;
 
     const insertGroupQuery = `
-      INSERT INTO study_groups (name, category, date, start_time, end_time, host_username, max_participants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO study_groups (name, category, date, start_time, end_time, host_username, max_participants, meeting_link)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
-    const groupResult = await db.one(insertGroupQuery, [name, category, date, start_time, end_time, host_username, max_participants]);
+    const groupResult = await db.one(insertGroupQuery, [name, category, date, start_time, end_time, host_username, max_participants, meeting_link]);
 
     // Insert members into study_group_members table
     if (members && Array.isArray(members)) {
@@ -1015,7 +1023,7 @@ app.get('/study-groups/:id', async (req, res) => {
 
 app.put('/study-groups/edit/:id', async (req, res) => {
   const groupId = req.params.id;
-  const { name, category, date, start_time, end_time, max_participants } = req.body;
+  const { name, category, date, start_time, end_time, max_participants, meeting_link } = req.body;
   const username = req.session.user.username;
   // Ensure only host can edit
   const group = await db.oneOrNone('SELECT * FROM study_groups WHERE id = $1 AND host_username = $2', [groupId, username]);
@@ -1025,8 +1033,8 @@ app.put('/study-groups/edit/:id', async (req, res) => {
 
   await db.none(`
     UPDATE study_groups
-    SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6
-    WHERE id = $7`, [name, category, date, start_time, end_time, max_participants, groupId]
+    SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6, meeting_link = $7
+    WHERE id = $8`, [name, category, date, start_time, end_time, max_participants, meeting_link, groupId]
   );
 
   await db.none(`
