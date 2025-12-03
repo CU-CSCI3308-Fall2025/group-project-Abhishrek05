@@ -515,53 +515,57 @@ app.post('/login', async (req, res) => {
     const today = new Date().toLocaleDateString("sv");           // '2025-11-26'
     const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("sv");
 
-    // Extract values
-    let lastlogin = req.session.user.lastlogin;   // may be null
-    let streak = req.session.user.streak;         // number
+    // Extract values (handle undefined/null cases)
+    let lastlogin = req.session.user.lastlogin || null;   // may be null
+    let streak = req.session.user.streak || 0;            // default to 0 if undefined
 
     // --- CASE 1: First login ever ---
-    if (lastlogin === null) {
+    if (lastlogin === null || lastlogin === undefined) {
         streak = 1;
     }
-
     // --- CASE 2: Already logged in today ---
     else if (lastlogin === today) {
         // streak stays the same
     }
-
     // --- CASE 3: Logged in yesterday → increment streak ---
     else if (lastlogin === yesterday) {
-        streak = streak + 1;
+        streak = (streak || 0) + 1;
     }
-
     // --- CASE 4: Missed one or more days ---
     else {
         streak = 1;
     }
 
-// --- Update database row ---
-await db.none(
-    `
-    UPDATE users 
-    SET lastlogin = $1, streak = $2
-    WHERE username = $3
-    `,
-    [today, streak, req.session.user.username]
-);
+    // --- Update database row (with error handling) ---
+    try {
+      await db.none(
+        `UPDATE users 
+         SET lastlogin = $1, streak = $2
+         WHERE username = $3`,
+        [today, streak, req.session.user.username]
+      );
+      
+      // --- Update the session copy ---
+      req.session.user.lastlogin = today;
+      req.session.user.streak = streak;
+    } catch (dbError) {
+      // If columns don't exist, log but don't fail login
+      console.error('Error updating login streak:', dbError.message);
+      // Continue with login even if streak update fails
+    }
 
-// --- Update the session copy ---
-req.session.user.lastlogin = today;
-req.session.user.streak = streak;
-
-// Continue login success response…
-
-
+    // Continue login success response
     req.session.save(() => {
       res.redirect('/calendar');
     });
 
   } catch (error) {
-    console.log('login error', error);
+    console.error('Login error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body
+    });
     return res.render('pages/login', { 
       error: true,
       message: 'Server error. Please try again later.'
