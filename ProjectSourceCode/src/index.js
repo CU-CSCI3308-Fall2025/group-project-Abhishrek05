@@ -667,9 +667,15 @@ app.get('/dashboard', async (req, res) => {
       LIMIT 5
     `, [username]);
 
+    // make sure user object has streak value (default to 0 if undefined)
+    const userWithStreak = {
+      ...req.session.user,
+      streak: req.session.user.streak || 0
+    };
+
     res.render('pages/dashboard.hbs', {
       title: 'Dashboard - StudyBuddie',
-      user: req.session.user,
+      user: userWithStreak,
       currentPage: 'dashboard',
       assignments: formattedAssignments,
       activeAssignmentsCount: activeAssignments ? parseInt(activeAssignments.count) : 0,
