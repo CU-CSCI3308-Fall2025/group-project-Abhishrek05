@@ -41,69 +41,70 @@
     </div>
     <div class="modal-body">
       <div id="eventsList"></div>
-      <form id="eventForm">
+      <form id="eventForm" action="/calendar/new" method="POST">
+        <input type="hidden" id="selectedDate" name="event_date">
         <div class="field">
           <span class="label-sm">EVENT TYPE</span>
-          <select id="eventType" required>
+          <select id="eventType" name="type" required>
             <option value="meeting" selected>Group Meeting</option>
-            <option value="study">Study Session</option>
+            <option value="study_group">Study Group</option>
             <option value="assignment">Assignment</option>
           </select>
         </div>
         <div id="meetingFields" class="event-type-fields">
           <div class="field">
             <span class="label-sm">EVENT TITLE</span>
-            <input type="text" id="eventTitle" placeholder="Study session" required>
+            <input type="text" id="eventTitle" name="title" required>
           </div>
           <div class="field">
             <span class="label-sm">START TIME (OPTIONAL)</span>
-            <input type="time" id="eventTime" value="">
+            <input type="time" id="eventTime" name="start_time">
           </div>
           <div class="field">
             <span class="label-sm">END TIME (OPTIONAL)</span>
-            <input type="time" id="eventEndTime" value="">
+            <input type="time" id="eventEndTime" name="end_time">
           </div>
         </div>
         
         <div id="studyFields" class="event-type-fields" style="display: none;">
           <div class="field">
             <span class="label-sm">GROUP NAME</span>
-            <input type="text" id="studyGroupName" placeholder="Calculus Review">
+            <input type="text" id="studyGroupName" name="title">
           </div>
           <div class="field">
             <span class="label-sm">CATEGORY</span>
-            <input type="text" id="studyCategory" placeholder="Homework / Exam Prep">
+            <input type="text" id="studyCategory" name="description">
           </div>
           <div class="field">
             <span class="label-sm">START TIME</span>
-            <input type="time" id="studyStartTime">
+            <input type="time" id="studyStartTime" name="start_time">
           </div>
           <div class="field">
             <span class="label-sm">END TIME</span>
-            <input type="time" id="studyEndTime">
+            <input type="time" id="studyEndTime" name="end_time">
           </div>
           <div class="field">
             <span class="label-sm">MAX PARTICIPANTS</span>
-            <input type="number" id="studyMaxParticipants" min="1" value="5">
+            <input type="number" id="studyMaxParticipants" name="max_participants">
           </div>
         </div>
         
         <div id="assignmentFields" class="event-type-fields" style="display: none;">
           <div class="field">
             <span class="label-sm">NAME</span>
-            <input type="text" id="assignmentName" placeholder="Final Exam">
+            <input type="text" id="assignmentName" name="title">
           </div>
           <div class="field">
             <span class="label-sm">DESCRIPTION</span>
-            <textarea id="assignmentDescription" rows="3"></textarea>
+            <textarea id="assignmentDescription" name="description"></textarea>
           </div>
           <div class="field">
             <span class="label-sm">COURSE</span>
-            <input type="text" id="assignmentCourse" placeholder="CSCI 3308">
+            <input type="text" id="assignmentCourse" name="course">
           </div>
           <div class="field">
             <span class="label-sm">DUE AT</span>
-            <input type="datetime-local" id="assignmentDueAt">
+            <input type="datetime-local" id="assignmentDueAt" name="due_at">
           </div>
         </div>
         <div class="actions">
@@ -111,7 +112,7 @@
           <button class="btn-primary" type="submit" id="submitBtn">Add Event</button>
           <button class="btn-secondary" type="button" id="cancelEditBtn" style="display: none; margin-top: 8px;">Cancel</button>
         </div>
-      </form>
+      <form id="eventForm" action="/calendar/new" method="POST">
     </div>
   </div>
 </div>
@@ -542,6 +543,7 @@
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
   let selectedDate = null;
+  const serverEvents = {{{json events}}};
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -551,13 +553,13 @@
 // Event type modality
 const fieldGroups = {
   meeting: document.getElementById('meetingFields'),
-  study: document.getElementById('studyFields'),
+  study_group: document.getElementById('studyFields'),
   assignment: document.getElementById('assignmentFields'),
 };
 
 const typeInputs = {
   meeting: fieldGroups.meeting.querySelectorAll('input, textarea'),
-  study: fieldGroups.study.querySelectorAll('input, textarea'),
+  study_group: fieldGroups.study_group.querySelectorAll('input, textarea'),
   assignment: fieldGroups.assignment.querySelectorAll('input, textarea'),
 };
 
@@ -585,7 +587,7 @@ updateFieldVisibility(eventTypeSelect.value);
     document.getElementById('eventType').value = type;
     updateFieldVisibility(type);
 
-    if (type === 'study') {
+    if (type === 'study_group') {
       const details = event.details || {};
       document.getElementById('studyGroupName').value = details.groupName || event.title || '';
       document.getElementById('studyCategory').value = details.category || '';
@@ -621,9 +623,9 @@ updateFieldVisibility(eventTypeSelect.value);
   }
 
   function getEventsForDate(year, month, day) {
-    const events = getEvents();
-    const dateKey = `${year}-${month}-${day}`;
-    return events[dateKey] || [];
+    //const events = getEvents();
+    const dateKey = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    return serverEvents.filter(ev => ev.event_date.startsWith(dateKey));
   }
 
   function addEvent(year, month, day, event) {
@@ -684,7 +686,7 @@ updateFieldVisibility(eventTypeSelect.value);
     if (event.type === 'assignment' && event.details && event.details.dueAt) {
       return `Due ${event.details.dueAt}`;
     }
-    if (event.type === 'study' && event.details) {
+    if (event.type === 'study_group' && event.details) {
       const parts = [];
       if (event.details.category) parts.push(event.details.category);
       if (event.details.startTime || event.details.endTime) {
@@ -708,7 +710,7 @@ updateFieldVisibility(eventTypeSelect.value);
       if (event.details.description) bits.push(event.details.description);
       return bits.join(' • ');
     }
-    if (event.type === 'study' && event.details) {
+    if (event.type === 'study_group' && event.details) {
       const bits = ['Study Session'];
       if (event.details.category) bits.push(event.details.category);
       const timeLabel = formatTimeLabel(event);
@@ -901,6 +903,9 @@ updateFieldVisibility(eventTypeSelect.value);
     const modal = document.getElementById('eventModal');
     const dateStr = `${monthNames[month]} ${day}, ${year}`;
     document.getElementById('modalDate').textContent = dateStr;
+
+    document.getElementById("selectedDate").value =
+      `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     
     // Show events list and form (day view mode)
     document.getElementById('eventsList').style.display = 'block';
@@ -991,6 +996,7 @@ updateFieldVisibility(eventTypeSelect.value);
     document.getElementById('editingEventId').value = '';
     document.getElementById('submitBtn').textContent = 'Add Event';
     document.getElementById('cancelEditBtn').style.display = 'none';
+    updateFieldVisibility(document.getElementById('eventType').value);
   }
 
   function deleteEventFromModal(year, month, day, eventId) {
@@ -1004,7 +1010,7 @@ updateFieldVisibility(eventTypeSelect.value);
   window.startEditEvent = startEditEvent;
 
   function buildEventPayload(type) {
-  if (type === 'study') {
+  if (type === 'study_group') {
     const groupName = document.getElementById('studyGroupName').value.trim();
     return {
       title: groupName,
@@ -1062,13 +1068,63 @@ document.getElementById('eventForm').addEventListener('submit', (e) => {
       parseInt(editingEventId, 10),
       payload,
     );
-  } else {
-    addEvent(selectedDate.year, selectedDate.month, selectedDate.day, payload);
+    renderCalendar();
+    closeEventModal();
   }
 
-  renderCalendar();
-  closeEventModal();
+fetch("/calendar/new", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title: payload.title,
+    description: payload.details?.category || payload.details?.description || payload.title,
+    event_date: `${selectedDate.year}-${String(selectedDate.month + 1).padStart(2,"0")}-${String(selectedDate.day).padStart(2,"0")}`,
+    start_time: payload.time || payload.details?.startTime || null,
+    end_time: payload.endTime || payload.details?.endTime || null,
+    type: type === "study_group" ? "study_group" : "assignment"
+  })
+})
+.then(res => res.json())
+.then(data => {
+  if (data.success) {
+    console.log("Event created:", data.event);
+    renderCalendar();      // refresh calendar display
+    closeEventModal();     // close modal
+
+    // Dynamically add study group to page
+    if (data.study_group) {
+      addStudyGroupToPage(data.study_group);
+    }
+  } else {
+    alert("Failed to create event.");
+    console.error(data);
+  }
+})
+.catch(err => {
+  console.error("Error posting to server:", err);
+  alert("Error creating event.");
 });
+
+
+});
+
+function addStudyGroupToPage(studyGroup) {
+  const container = document.getElementById("studyGroupsContainer"); // your container for study groups
+  if (!container) return;
+
+  const div = document.createElement("div");
+  div.classList.add("study-group-card");
+  div.innerHTML = `
+    <h3>${studyGroup.name}</h3>
+    <p>Category: ${studyGroup.category}</p>
+    <p>Date: ${studyGroup.date}</p>
+    <p>Time: ${studyGroup.start_time || "N/A"} - ${studyGroup.end_time || "N/A"}</p>
+    <p>Host: ${studyGroup.host_username}</p>
+    <p>Max participants: ${studyGroup.max_participants}</p>
+  `;
+  container.appendChild(div);
+}
+
 
   // Cancel edit button
   document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);

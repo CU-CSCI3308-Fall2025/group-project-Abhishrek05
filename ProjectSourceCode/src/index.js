@@ -276,6 +276,10 @@ hbs.handlebars.registerHelper('eq', function(a, b) {
   return a === b;
 });
 
+hbs.handlebars.registerHelper('json', function(context) {
+  return JSON.stringify(context);
+});
+
 // database configuration
 const dbConfig = {
   host: process.env.POSTGRES_HOST || 'dpg-d4fppdshg0os73civju0-a', // the database server
@@ -690,13 +694,108 @@ app.get('/dashboard', async (req, res) => {
   }
 });
 
-app.get('/calendar', (req, res) => {
+app.get('/calendar', async (req, res) => {
+  const events = await db.any(`
+    SELECT * FROM calendar_events 
+    ORDER BY event_date ASC, start_time ASC
+    `);
   res.render('pages/calendar.hbs', {
     title: 'Calendar',
     user: req.session.user,
-    currentPage: 'calendar'
-  }) // ! Calendar Page still needs to get added
+    currentPage: 'calendar',
+    events: events
+  })
 });
+
+app.post("/calendar/new", async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      event_date,
+      start_time,
+      end_time,
+      type       // "study_group" or "assignment"
+    } = req.body;
+
+    const user = req.session.user;
+    if (!user) {
+      return res.status(401).json({ error: "Not logged in" });
+    }
+
+    let sourceId = null;
+
+    // -----------------------------
+    // 1) If the user created a STUDY GROUP from the calendar,
+    //    create a matching study_groups row and store its ID
+    // -----------------------------
+    if (type === "study_group") {
+      const newGroup = await db.one(`
+        INSERT INTO study_groups
+          (name, category, date, start_time, end_time, max_participants, host_username)
+        VALUES
+          ($1, $2, $3, $4, $5, 5, $6)
+        RETURNING id;
+        `,
+        [
+          title,
+          description || "General Study Group",
+          event_date,
+          start_time,
+          end_time,
+          user.username
+        ]
+      );
+
+      sourceId = newGroup.id; // link calendar event to this study group
+    }
+
+    // -----------------------------
+    // 2) Insert CALENDAR EVENT (works for both study groups and assignments)
+    // -----------------------------
+    const newEvent = await db.one(
+      `
+      INSERT INTO calendar_events
+        (title, description, event_date, start_time, end_time, source_type, source_id)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id;
+      `,
+      [
+        title,
+        description,
+        event_date,
+        start_time,
+        end_time,
+        type,       // "study_group" or "assignment"
+        sourceId    // will be null for assignments, set for study groups
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "Event created and synced.",
+      event: newEvent,
+      studyGroup: sourceId ? {
+        id: sourceId,
+        name: title,
+        category: description || "General Study Group",
+        date: event_date,
+        start_time,
+        end_time,
+        max_participants: 5,
+        host_username: user.username
+      } : null
+    });
+
+
+  } catch (error) {
+    console.error("Error creating calendar event:", error);
+    res.status(500).json({ error: "Failed to create calendar event" });
+  }
+});
+
+
 
 app.get('/friends', async (req, res) => {
   if (!req.session.user) return res.redirect('/login');
@@ -881,6 +980,13 @@ app.post('/study-groups/create', async (req, res) => {
       }
     }
 
+    await db.none(`
+      INSERT INTO calendar_events 
+      (title, description, event_date, start_time, end_time, source_type, source_id)
+      VALUES ($1, $2, $3, $4, $5, 'study_group', $6)`,
+    [name, `Study group for ${category}`, date, start_time, end_time, groupResult.id]
+    );
+
     res.status(200).json({ success: true, message: 'Study group created successfully' });
   } catch (err) {
     console.error('Error creating study group:', err);
@@ -912,6 +1018,12 @@ app.put('/study-groups/edit/:id', async (req, res) => {
     SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6
     WHERE id = $7`, [name, category, date, start_time, end_time, max_participants, groupId]
   );
+
+  await db.none(`
+    UPDATE calendar_events
+    SET title = $1, description = $2, event_date = $3, start_time = $4, end_time = $5
+    WHERE source_type = 'study_group' AND source_id = $6`,
+    [name, `Study group for ${category}`, date, start_time, end_time, groupId]);
   res.json({ success: true, message: 'Study group updated successfully' });
 });
 
@@ -932,6 +1044,11 @@ app.delete('/study-groups/delete/:id', async (req, res) => {
 
     //Delete the group (will also delete members due to ON DELETE CASCADE)
     await db.none('DELETE FROM study_groups WHERE id = $1', [groupId]);
+    await db.none(`
+      DELETE FROM calendar_events 
+      WHERE source_type = 'study_group' 
+      AND source_id = $1`, 
+      [groupId]);
     res.json({ success: true, message: 'Study group deleted successfully' });
   } catch (err) {
     console.error('Error deleting study group:', err);
