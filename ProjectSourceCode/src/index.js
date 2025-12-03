@@ -957,11 +957,18 @@ app.get('/study-groups', async (req, res) => {
       ORDER BY sg.date ASC, sg.start_time ASC;
       `);
 
+      const friends = await db.any(`
+      SELECT friend_username
+      FROM friendList
+      WHERE user_username = $1
+    `, [username]);
+
       res.render('pages/study-groups.hbs', {
         title: 'Study Groups - StudyBuddie',
         user: req.session.user,
         currentPage: 'study-groups',
-        studyGroups: studyGroups
+        studyGroups: studyGroups,
+        friends: friends.map(f => f.friend_username),
       });
   } catch (err) {
     console.error('Error fetching study groups:', err);
