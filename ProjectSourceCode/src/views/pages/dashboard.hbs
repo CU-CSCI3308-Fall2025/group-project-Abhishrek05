@@ -99,22 +99,22 @@
                 <div class="group-details">
                   <div class="group-date">
                     <span class="icon">📅</span>
-                    {{this.date}}
+                    {{formatDate this.date}}
                   </div>
                   <div class="group-time">
                     <span class="icon">🕐</span>
-                    {{this.time}}
+                    {{this.start_time}}-{{this.end_time}}
                   </div>
                   <div class="group-participants">
                     <span class="icon">👥</span>
                     {{this.participants}}/{{this.maxParticipants}} participants
                   </div>
                   <div class="group-host">
-                    <span class="host-avatar">{{this.hostInitials}}</span>
+                    <span class="host-avatar">{{this.host_username}}</span>
                     Hosted by {{this.hostName}}
                   </div>
                 </div>
-                <button class="btn-join">Join</button>
+                <a href="{{this.meeting_link}}" target="_blank" class="btn-join">Join</a>
               </div>
             {{/each}}
           {{else}}

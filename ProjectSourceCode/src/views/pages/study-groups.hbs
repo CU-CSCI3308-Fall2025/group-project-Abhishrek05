@@ -32,6 +32,7 @@
                       {{/each}}
                     </div> --}}
                     {{!-- Only show Edit if this user is the host --}}
+                      <button class="btn-link" onclick="window.open('{{this.meeting_link}}', '_blank')">Join Meeting</button>
                     {{#if (eq this.host_username ../user.username)}}
                       <button class="btn-secondary edit-btn" data-group-id="{{this.id}}">Edit</button>
                       <button class="btn-danger delete-btn" data-group-id="{{this.id}}">Delete</button>
@@ -106,6 +107,17 @@
           <input type="number" name="max_participants" min="1" value="5" required>
         </div>
 
+        <div class="mb-3" id="create_group_url_group">
+          <label for="event_remote_url" class="form-label">Group Meeting Link</label>
+          <input 
+              type="url" 
+              class="form-control" 
+              id="event_remote_url"
+              name="event_remote_url"
+              placeholder="https://example.com/meeting" 
+              pattern="https?://.+" required/>
+        </div>
+
         <div class="field">
           <span class="label-sm">ADD FRIENDS</span>
           <div class="friend-checkboxes">
@@ -164,6 +176,17 @@
         <div class="field">
           <span class="label-sm">MAX PARTICIPANTS</span>
           <input type="number" name="max_participants" id="editGroupMax" min="1" required>
+        </div>
+
+        <div class="mb-3" id="edit_group_url_group">
+          <label for="edit_event_remote_url" class="form-label">Group Meeting Link</label>
+          <input 
+              type="url" 
+              class="form-control" 
+              id="edit_event_remote_url"
+              name="meeting_link"
+              placeholder="https://example.com/meeting" 
+              pattern="https?://.+" required/>
         </div>
 
         <button class="btn-primary" type="submit">Save Changes</button>
@@ -297,6 +320,7 @@
       start_time: formData.get("start_time"),
       end_time: formData.get("end_time"),
       max_participants: formData.get("max_participants"),
+      meeting_link: formData.get("event_remote_url"),
       members: formData.getAll("members")
     };
 
@@ -336,6 +360,7 @@
       document.getElementById("editGroupStartTime").value = group.start_time;
       document.getElementById("editGroupEndTime").value = group.end_time;
       document.getElementById("editGroupMax").value = group.max_participants;
+      document.getElementById("event_remote_url").value = group.meeting_link || '';
 
       // Show modal
       editModal.style.display = "block";
