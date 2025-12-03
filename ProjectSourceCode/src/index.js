@@ -705,16 +705,27 @@ app.get('/dashboard', async (req, res) => {
 });
 
 app.get('/calendar', async (req, res) => {
-  const events = await db.any(`
-    SELECT * FROM calendar_events 
-    ORDER BY event_date ASC, start_time ASC
+  try {
+    const events = await db.any(`
+      SELECT * FROM calendar_events 
+      ORDER BY event_date ASC, start_time ASC
     `);
-  res.render('pages/calendar.hbs', {
-    title: 'Calendar',
-    user: req.session.user,
-    currentPage: 'calendar',
-    events: events
-  })
+    res.render('pages/calendar.hbs', {
+      title: 'Calendar',
+      user: req.session.user,
+      currentPage: 'calendar',
+      events: events || []
+    });
+  } catch (error) {
+    console.error('Calendar error:', error);
+    // Render calendar with empty events if table doesn't exist or query fails
+    res.render('pages/calendar.hbs', {
+      title: 'Calendar',
+      user: req.session.user,
+      currentPage: 'calendar',
+      events: []
+    });
+  }
 });
 
 app.post("/calendar/new", async (req, res) => {

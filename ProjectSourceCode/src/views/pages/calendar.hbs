@@ -543,7 +543,7 @@
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
   let selectedDate = null;
-  const serverEvents = {{{json events}}};
+  const serverEvents = {{{json events}}} || [];
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -624,8 +624,11 @@ updateFieldVisibility(eventTypeSelect.value);
 
   function getEventsForDate(year, month, day) {
     //const events = getEvents();
+    if (!serverEvents || !Array.isArray(serverEvents)) {
+      return [];
+    }
     const dateKey = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    return serverEvents.filter(ev => ev.event_date.startsWith(dateKey));
+    return serverEvents.filter(ev => ev && ev.event_date && ev.event_date.startsWith(dateKey));
   }
 
   function addEvent(year, month, day, event) {
@@ -899,25 +902,45 @@ updateFieldVisibility(eventTypeSelect.value);
 
   // Modal functions
   function openEventModal(year, month, day) {
-    selectedDate = { year, month, day };
-    const modal = document.getElementById('eventModal');
-    const dateStr = `${monthNames[month]} ${day}, ${year}`;
-    document.getElementById('modalDate').textContent = dateStr;
+    try {
+      selectedDate = { year, month, day };
+      const modal = document.getElementById('eventModal');
+      if (!modal) {
+        console.error('Modal element not found');
+        return;
+      }
+      
+      const dateStr = `${monthNames[month]} ${day}, ${year}`;
+      const modalDateEl = document.getElementById('modalDate');
+      if (modalDateEl) {
+        modalDateEl.textContent = dateStr;
+      }
 
-    document.getElementById("selectedDate").value =
-      `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    
-    // Show events list and form (day view mode)
-    document.getElementById('eventsList').style.display = 'block';
-    document.getElementById('eventForm').style.display = 'block';
-    
-    // Load existing events
-    loadEventsList(year, month, day);
-    
-    // Reset form and cancel any editing
-    cancelEdit();
-    
-    modal.style.display = 'block';
+      const selectedDateEl = document.getElementById("selectedDate");
+      if (selectedDateEl) {
+        selectedDateEl.value = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+      
+      // Show events list and form (day view mode)
+      const eventsListEl = document.getElementById('eventsList');
+      const eventFormEl = document.getElementById('eventForm');
+      if (eventsListEl) eventsListEl.style.display = 'block';
+      if (eventFormEl) eventFormEl.style.display = 'block';
+      
+      // Load existing events
+      if (typeof loadEventsList === 'function') {
+        loadEventsList(year, month, day);
+      }
+      
+      // Reset form and cancel any editing
+      if (typeof cancelEdit === 'function') {
+        cancelEdit();
+      }
+      
+      modal.style.display = 'block';
+    } catch (error) {
+      console.error('Error opening modal:', error);
+    }
   }
 
   function openEventEditModal(year, month, day, eventId) {
@@ -1126,39 +1149,56 @@ function addStudyGroupToPage(studyGroup) {
 }
 
 
-  // Cancel edit button
-  document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
-
-  // Close modal when clicking outside
-  window.onclick = function(event) {
-    const modal = document.getElementById('eventModal');
-    if (event.target === modal) {
-      closeEventModal();
+  // Set up event listeners
+  try {
+    // Cancel edit button
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) {
+      cancelEditBtn.addEventListener('click', cancelEdit);
     }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('eventModal');
+      if (event.target === modal) {
+        closeEventModal();
+      }
+    }
+
+    // Close modal button
+    const closeModalBtn = document.getElementById('closeModal');
+    if (closeModalBtn) {
+      closeModalBtn.addEventListener('click', closeEventModal);
+    }
+
+    const prevMonthBtn = document.getElementById('prevMonth');
+    if (prevMonthBtn) {
+      prevMonthBtn.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+        renderCalendar();
+      });
+    }
+
+    const nextMonthBtn = document.getElementById('nextMonth');
+    if (nextMonthBtn) {
+      nextMonthBtn.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+        renderCalendar();
+      });
+    }
+
+    // Initial render
+    renderCalendar();
+  } catch (error) {
+    console.error('Error initializing calendar:', error);
   }
-
-  // Close modal button
-  document.getElementById('closeModal').addEventListener('click', closeEventModal);
-
-  document.getElementById('prevMonth').addEventListener('click', () => {
-    currentMonth--;
-    if (currentMonth < 0) {
-      currentMonth = 11;
-      currentYear--;
-    }
-    renderCalendar();
-  });
-
-  document.getElementById('nextMonth').addEventListener('click', () => {
-    currentMonth++;
-    if (currentMonth > 11) {
-      currentMonth = 0;
-      currentYear++;
-    }
-    renderCalendar();
-  });
-
-  // Initial render
-  renderCalendar();
 </script>
 
