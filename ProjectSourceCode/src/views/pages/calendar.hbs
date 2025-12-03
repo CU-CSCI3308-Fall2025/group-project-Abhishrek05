@@ -1058,6 +1058,14 @@ document.getElementById('eventForm').addEventListener('submit', (e) => {
 
   const type = document.getElementById('eventType').value;
   const payload = buildEventPayload(type);
+
+  // ⛔ If it's an assignment → save to DB, THEN stop
+  if (type === "assignment") {
+    saveAssignmentToDB(payload, selectedDate);
+    return; // stop normal event creation
+  }
+
+
   const editingEventId = document.getElementById('editingEventId').value;
 
   if (editingEventId) {
@@ -1157,6 +1165,72 @@ function addStudyGroupToPage(studyGroup) {
     }
     renderCalendar();
   });
+
+  
+function saveAssignmentToDB(payload, selectedDate) {
+  fetch("/add_assignment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: payload.details.name,
+      description: payload.details.description,
+      course: payload.details.course,
+      due_at: payload.details.dueAt
+    })
+  })
+  .then(res => {
+    // Backend redirects → follow automatically
+    if (res.redirected) {
+      window.location.href = res.url;
+      return;
+    }
+    return res.json().catch(() => null);
+  })
+  .then(() => {
+    // 1️⃣ Add to calendar database
+    return fetch("/calendar/new", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: payload.details.name,
+        description: payload.details.description || payload.details.course,
+        event_date: `${selectedDate.year}-${String(selectedDate.month + 1).padStart(2,"0")}-${String(selectedDate.day).padStart(2,"0")}`,
+        start_time: null,
+        end_time: null,
+        type: "assignment"
+      })
+    });
+  })
+  .then(res => res.json())
+  .then(data => {
+    // 2️⃣ Push this new calendar event into serverEvents
+    serverEvents.push({
+    id: data.event.id,
+    title: payload.details.name,
+    type: "assignment",           // 🔥 REQUIRED
+    details: {
+      description: payload.details.description,
+      course: payload.details.course,
+      dueAt: payload.details.dueAt
+    },
+    event_date: `${selectedDate.year}-${String(selectedDate.month + 1).padStart(2,"0")}-${String(selectedDate.day).padStart(2,"0")}`,
+    start_time: null,
+    end_time: null
+  });
+
+
+    renderCalendar();
+    closeEventModal();
+  })
+
+  .catch(err => {
+    console.error("Assignment save error:", err);
+    alert("Failed to save assignment.");
+  });
+}
+
+
+  
 
   // Initial render
   renderCalendar();

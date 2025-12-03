@@ -1363,26 +1363,23 @@ app.get('/removeAssignment', async (req, res) => { //
   }
 });
 
-// add_assignment
 app.post('/add_assignment', async (req, res) => {
   console.log("POST /add_assignment BODY:", req.body);
 
   const { name, description, course, due_at, is_group } = req.body;
-  const currentUser = req.session.user.username;  // <-- REQUIRED: your logged-in username
+  const currentUser = req.session.user.username;
 
-  // Validate required fields
   if (!name || !name.trim()) {
     console.error("ERROR: Assignment name is required");
-    return res.redirect('/calendar');
+    return res.status(400).json({ success: false, message: "Assignment name is required" });
   }
 
   if (!due_at) {
     console.error("ERROR: Assignment due date is required");
-    return res.redirect('/calendar');
+    return res.status(400).json({ success: false, message: "Assignment due date is required" });
   }
 
   try {
-    // 1️⃣ Check if assignment already exists
     const existingAssignment = await db.oneOrNone(
       'SELECT * FROM assignments WHERE name = $1',
       [name]
@@ -1390,26 +1387,21 @@ app.post('/add_assignment', async (req, res) => {
 
     if (existingAssignment) {
       console.log("Assignment already exists → only linking user");
-
-      // 2️⃣ Insert into assignment_friends (if not already linked)
       await db.none(
         `INSERT INTO assignment_friends (assignment_name, user_username)
          VALUES ($1, $2)
          ON CONFLICT DO NOTHING`,
         [name, currentUser]
       );
-
     } else {
       console.log("Assignment does NOT exist → inserting into assignments + linking user");
 
-      // 3️⃣ Create new assignment
       await db.none(
         `INSERT INTO assignments (name, description, course, due_at, is_group)
          VALUES ($1, $2, $3, $4, $5)`,
-        [name, description, course, due_at, is_group]
+        [name, description, course, due_at, is_group || false]
       );
 
-      // 4️⃣ Link current user to this new assignment
       await db.none(
         `INSERT INTO assignment_friends (assignment_name, user_username)
          VALUES ($1, $2)`,
@@ -1417,10 +1409,10 @@ app.post('/add_assignment', async (req, res) => {
       );
     }
 
-    return res.redirect('/calendar');
+    return res.json({ success: true });
 
   } catch (error) {
     console.error("ERROR in /add_assignment:", error);
-    return res.redirect('/calendar');
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
