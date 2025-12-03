@@ -43,24 +43,68 @@
       <div id="eventsList"></div>
       <form id="eventForm">
         <div class="field">
-          <span class="label-sm">EVENT TITLE</span>
-          <input type="text" id="eventTitle" placeholder="Study session" required>
-        </div>
-        <div class="field">
           <span class="label-sm">EVENT TYPE</span>
           <select id="eventType" required>
+            <option value="meeting" selected>Group Meeting</option>
             <option value="study">Study Session</option>
             <option value="assignment">Assignment</option>
-            <option value="meeting">Group Meeting</option>
           </select>
         </div>
-        <div class="field">
-          <span class="label-sm">START TIME (OPTIONAL)</span>
-          <input type="time" id="eventTime" value="">
+        <div id="meetingFields" class="event-type-fields">
+          <div class="field">
+            <span class="label-sm">EVENT TITLE</span>
+            <input type="text" id="eventTitle" placeholder="Study session" required>
+          </div>
+          <div class="field">
+            <span class="label-sm">START TIME (OPTIONAL)</span>
+            <input type="time" id="eventTime" value="">
+          </div>
+          <div class="field">
+            <span class="label-sm">END TIME (OPTIONAL)</span>
+            <input type="time" id="eventEndTime" value="">
+          </div>
         </div>
-        <div class="field">
-          <span class="label-sm">END TIME (OPTIONAL)</span>
-          <input type="time" id="eventEndTime" value="">
+        
+        <div id="studyFields" class="event-type-fields" style="display: none;">
+          <div class="field">
+            <span class="label-sm">GROUP NAME</span>
+            <input type="text" id="studyGroupName" placeholder="Calculus Review">
+          </div>
+          <div class="field">
+            <span class="label-sm">CATEGORY</span>
+            <input type="text" id="studyCategory" placeholder="Homework / Exam Prep">
+          </div>
+          <div class="field">
+            <span class="label-sm">START TIME</span>
+            <input type="time" id="studyStartTime">
+          </div>
+          <div class="field">
+            <span class="label-sm">END TIME</span>
+            <input type="time" id="studyEndTime">
+          </div>
+          <div class="field">
+            <span class="label-sm">MAX PARTICIPANTS</span>
+            <input type="number" id="studyMaxParticipants" min="1" value="5">
+          </div>
+        </div>
+        
+        <div id="assignmentFields" class="event-type-fields" style="display: none;">
+          <div class="field">
+            <span class="label-sm">NAME</span>
+            <input type="text" id="assignmentName" placeholder="Final Exam">
+          </div>
+          <div class="field">
+            <span class="label-sm">DESCRIPTION</span>
+            <textarea id="assignmentDescription" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <span class="label-sm">COURSE</span>
+            <input type="text" id="assignmentCourse" placeholder="CSCI 3308">
+          </div>
+          <div class="field">
+            <span class="label-sm">DUE AT</span>
+            <input type="datetime-local" id="assignmentDueAt">
+          </div>
         </div>
         <div class="actions">
           <input type="hidden" id="editingEventId" value="">
@@ -504,6 +548,68 @@
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+// Event type modality
+const fieldGroups = {
+  meeting: document.getElementById('meetingFields'),
+  study: document.getElementById('studyFields'),
+  assignment: document.getElementById('assignmentFields'),
+};
+
+const typeInputs = {
+  meeting: fieldGroups.meeting.querySelectorAll('input, textarea'),
+  study: fieldGroups.study.querySelectorAll('input, textarea'),
+  assignment: fieldGroups.assignment.querySelectorAll('input, textarea'),
+};
+
+function updateFieldVisibility(activeType) {
+  Object.keys(fieldGroups).forEach(type => {
+    fieldGroups[type].style.display = type === activeType ? 'block' : 'none';
+  });
+  Object.keys(typeInputs).forEach(type => {
+    typeInputs[type].forEach(input => {
+      const requires = input.hasAttribute('data-required');
+      input.required = requires && type === activeType;
+    });
+  });
+}
+
+const eventTypeSelect = document.getElementById('eventType');
+eventTypeSelect.addEventListener('change', () => {
+  updateFieldVisibility(eventTypeSelect.value);
+});
+updateFieldVisibility(eventTypeSelect.value);
+
+
+  function populateEventForm(event) {
+    const type = event.type || 'meeting';
+    document.getElementById('eventType').value = type;
+    updateFieldVisibility(type);
+
+    if (type === 'study') {
+      const details = event.details || {};
+      document.getElementById('studyGroupName').value = details.groupName || event.title || '';
+      document.getElementById('studyCategory').value = details.category || '';
+      document.getElementById('studyStartTime').value = details.startTime || event.time || '';
+      document.getElementById('studyEndTime').value = details.endTime || event.endTime || '';
+      document.getElementById('studyMaxParticipants').value = details.maxParticipants || 5;
+      return;
+    }
+
+    if (type === 'assignment') {
+      const details = event.details || {};
+      document.getElementById('assignmentName').value = details.name || event.title || '';
+      document.getElementById('assignmentDescription').value = details.description || '';
+      document.getElementById('assignmentCourse').value = details.course || '';
+      document.getElementById('assignmentDueAt').value = details.dueAt || '';
+      return;
+    }
+
+    // meeting default
+    document.getElementById('eventTitle').value = event.title || '';
+    document.getElementById('eventTime').value = event.time || '';
+    document.getElementById('eventEndTime').value = event.endTime || '';
+  }
+
   // Event storage functions
   function getEvents() {
     const eventsJson = localStorage.getItem('calendarEvents');
@@ -531,7 +637,8 @@
       title: event.title,
       type: event.type,
       time: event.time || '',
-      endTime: event.endTime || ''
+      endTime: event.endTime || '',
+      details: event.details || {}
     });
     saveEvents(events);
   }
@@ -551,25 +658,69 @@
   function updateEvent(year, month, day, eventId, event) {
     const events = getEvents();
     const dateKey = `${year}-${month}-${day}`;
-    if (events[dateKey]) {
-      const eventIndex = events[dateKey].findIndex(e => e.id === eventId);
-      if (eventIndex !== -1) {
-        events[dateKey][eventIndex] = {
-          id: eventId,
-          title: event.title,
-          type: event.type,
-          time: event.time || '',
-          endTime: event.endTime || ''
-        };
-        saveEvents(events);
-      }
-    }
+    if (!events[dateKey]) return;
+
+    const eventIndex = events[dateKey].findIndex(e => e.id === eventId);
+    if (eventIndex === -1) return;
+
+    events[dateKey][eventIndex] = {
+      id: eventId,
+      title: event.title,
+      type: event.type,
+      time: event.time || '',
+      endTime: event.endTime || '',
+      details: event.details || {}
+    };
+    saveEvents(events);
   }
+
 
   function getEventById(year, month, day, eventId) {
     const events = getEventsForDate(year, month, day);
     return events.find(e => e.id === eventId);
   }
+
+    function formatTimeLabel(event) {
+    if (event.type === 'assignment' && event.details && event.details.dueAt) {
+      return `Due ${event.details.dueAt}`;
+    }
+    if (event.type === 'study' && event.details) {
+      const parts = [];
+      if (event.details.category) parts.push(event.details.category);
+      if (event.details.startTime || event.details.endTime) {
+        const start = event.details.startTime || event.time;
+        const end = event.details.endTime || event.endTime;
+        parts.push([start, end].filter(Boolean).join(' - '));
+      }
+      return parts.join(' • ');
+    }
+    if (event.time && event.endTime) return `${event.time} - ${event.endTime}`;
+    if (event.time) return event.time;
+    if (event.endTime) return `until ${event.endTime}`;
+    return '';
+  }
+
+  function getEventSubtitle(event) {
+    if (event.type === 'assignment' && event.details) {
+      const bits = ['Assignment'];
+      if (event.details.course) bits.push(event.details.course);
+      if (event.details.dueAt) bits.push(`Due ${event.details.dueAt}`);
+      if (event.details.description) bits.push(event.details.description);
+      return bits.join(' • ');
+    }
+    if (event.type === 'study' && event.details) {
+      const bits = ['Study Session'];
+      if (event.details.category) bits.push(event.details.category);
+      const timeLabel = formatTimeLabel(event);
+      if (timeLabel) bits.push(timeLabel);
+      if (event.details.maxParticipants) bits.push(`Max ${event.details.maxParticipants}`);
+      return bits.join(' • ');
+    }
+    const defaultLabel = formatTimeLabel(event);
+    return ['Group Meeting', defaultLabel].filter(Boolean).join(' • ');
+  }
+
+
 
   function renderCalendar() {
     const firstDay = new Date(currentYear, currentMonth, 1);
@@ -619,16 +770,11 @@
         titleSpan.textContent = event.title;
         eventElement.appendChild(titleSpan);
         
-        if (event.time || event.endTime) {
+        const timeLabel = formatTimeLabel(event);
+        if (timeLabel) {
           const timeSpan = document.createElement('span');
           timeSpan.className = 'event-time';
-          if (event.time && event.endTime) {
-            timeSpan.textContent = `${event.time} - ${event.endTime}`;
-          } else if (event.time) {
-            timeSpan.textContent = event.time;
-          } else {
-            timeSpan.textContent = `until ${event.endTime}`;
-          }
+          timeSpan.textContent = timeLabel;
           eventElement.appendChild(timeSpan);
         }
         
@@ -673,16 +819,11 @@
         titleSpan.textContent = event.title;
         eventElement.appendChild(titleSpan);
         
-        if (event.time || event.endTime) {
+        const timeLabel = formatTimeLabel(event);
+        if (timeLabel) {
           const timeSpan = document.createElement('span');
           timeSpan.className = 'event-time';
-          if (event.time && event.endTime) {
-            timeSpan.textContent = `${event.time} - ${event.endTime}`;
-          } else if (event.time) {
-            timeSpan.textContent = event.time;
-          } else {
-            timeSpan.textContent = `until ${event.endTime}`;
-          }
+          timeSpan.textContent = timeLabel;
           eventElement.appendChild(timeSpan);
         }
         
@@ -731,16 +872,11 @@
         titleSpan.textContent = event.title;
         eventElement.appendChild(titleSpan);
         
-        if (event.time || event.endTime) {
+        const timeLabel = formatTimeLabel(event);
+        if (timeLabel) {
           const timeSpan = document.createElement('span');
           timeSpan.className = 'event-time';
-          if (event.time && event.endTime) {
-            timeSpan.textContent = `${event.time} - ${event.endTime}`;
-          } else if (event.time) {
-            timeSpan.textContent = event.time;
-          } else {
-            timeSpan.textContent = `until ${event.endTime}`;
-          }
+          timeSpan.textContent = timeLabel;
           eventElement.appendChild(timeSpan);
         }
         
@@ -793,10 +929,7 @@
     document.getElementById('eventForm').style.display = 'block';
     
     // Populate form with event data
-    document.getElementById('eventTitle').value = event.title;
-    document.getElementById('eventType').value = event.type;
-    document.getElementById('eventTime').value = event.time || '';
-    document.getElementById('eventEndTime').value = event.endTime || '';
+    populateEventForm(event);
     document.getElementById('editingEventId').value = eventId;
 
     // Update button text
@@ -815,47 +948,34 @@
   }
 
   function loadEventsList(year, month, day) {
-    const eventsList = document.getElementById('eventsList');
-    const events = getEventsForDate(year, month, day);
-    
-    if (events.length === 0) {
-      eventsList.innerHTML = '<p style="color: #57606a; font-size: 14px; text-align: center; padding: 20px;">No events for this day</p>';
-      return;
-    }
-    
-    eventsList.innerHTML = events.map(event => {
-      let timeDisplay = '';
-      if (event.time && event.endTime) {
-        timeDisplay = ` • ${event.time} - ${event.endTime}`;
-      } else if (event.time) {
-        timeDisplay = ` • ${event.time}`;
-      } else if (event.endTime) {
-        timeDisplay = ` • until ${event.endTime}`;
-      }
-      return `
-      <div class="event-item">
-        <div>
-          <div class="event-item-title">${event.title}</div>
-          <div class="event-item-type">${event.type}${timeDisplay}</div>
-        </div>
-        <div class="event-item-actions">
-          <button class="event-item-edit" onclick="startEditEvent(${year}, ${month}, ${day}, ${event.id})" title="Edit">✎</button>
-          <button class="event-item-delete" onclick="deleteEventFromModal(${year}, ${month}, ${day}, ${event.id})" title="Delete">×</button>
-        </div>
-      </div>
-    `;
-    }).join('');
+  const eventsList = document.getElementById('eventsList');
+  const events = getEventsForDate(year, month, day);
+
+  if (events.length === 0) {
+    eventsList.innerHTML = '<p style="color: #57606a; font-size: 14px; text-align: center; padding: 20px;">No events for this day</p>';
+    return;
   }
+
+  eventsList.innerHTML = events.map(event => `
+    <div class="event-item">
+      <div>
+        <div class="event-item-title">${event.title}</div>
+        <div class="event-item-type">${getEventSubtitle(event)}</div>
+      </div>
+      <div class="event-item-actions">
+        <button class="event-item-edit" onclick="startEditEvent(${year}, ${month}, ${day}, ${event.id})" title="Edit">✎</button>
+        <button class="event-item-delete" onclick="deleteEventFromModal(${year}, ${month}, ${day}, ${event.id})" title="Delete">×</button>
+      </div>
+    </div>
+  `).join('');
+}
 
   function startEditEvent(year, month, day, eventId) {
     const event = getEventById(year, month, day, eventId);
     if (!event) return;
 
     // Populate form with event data
-    document.getElementById('eventTitle').value = event.title;
-    document.getElementById('eventType').value = event.type;
-    document.getElementById('eventTime').value = event.time || '';
-    document.getElementById('eventEndTime').value = event.endTime || '';
+    populateEventForm(event);
     document.getElementById('editingEventId').value = eventId;
 
     // Update button text and show cancel button
@@ -883,41 +1003,72 @@
   window.deleteEventFromModal = deleteEventFromModal;
   window.startEditEvent = startEditEvent;
 
-  // Event form submission
-  document.getElementById('eventForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!selectedDate) return;
-    
-    const title = document.getElementById('eventTitle').value;
-    const type = document.getElementById('eventType').value;
-    const time = document.getElementById('eventTime').value.trim() || '';
-    const endTime = document.getElementById('eventEndTime').value.trim() || '';
-    const editingEventId = document.getElementById('editingEventId').value;
-    
-    if (editingEventId) {
-      // Update existing event
-      updateEvent(selectedDate.year, selectedDate.month, selectedDate.day, parseInt(editingEventId), {
-        title,
-        type,
-        time: time || '',
-        endTime: endTime || ''
-      });
-      // Close modal after updating
-      renderCalendar();
-      closeEventModal();
-    } else {
-      // Create new event
-      addEvent(selectedDate.year, selectedDate.month, selectedDate.day, {
-        title,
-        type,
-        time: time || '',
-        endTime: endTime || ''
-      });
-      // Close modal after adding
-      renderCalendar();
-      closeEventModal();
-    }
-  });
+  function buildEventPayload(type) {
+  if (type === 'study') {
+    const groupName = document.getElementById('studyGroupName').value.trim();
+    return {
+      title: groupName,
+      type,
+      time: document.getElementById('studyStartTime').value.trim(),
+      endTime: document.getElementById('studyEndTime').value.trim(),
+      details: {
+        groupName,
+        category: document.getElementById('studyCategory').value.trim(),
+        startTime: document.getElementById('studyStartTime').value.trim(),
+        endTime: document.getElementById('studyEndTime').value.trim(),
+        maxParticipants: parseInt(document.getElementById('studyMaxParticipants').value, 10) || 0,
+      },
+    };
+  }
+
+  if (type === 'assignment') {
+    return {
+      title: document.getElementById('assignmentName').value.trim(),
+      type,
+      time: '',
+      endTime: '',
+      details: {
+        name: document.getElementById('assignmentName').value.trim(),
+        description: document.getElementById('assignmentDescription').value.trim(),
+        course: document.getElementById('assignmentCourse').value.trim(),
+        dueAt: document.getElementById('assignmentDueAt').value,
+      },
+    };
+  }
+
+  // Default: meeting
+  return {
+    title: document.getElementById('eventTitle').value.trim(),
+    type,
+    time: document.getElementById('eventTime').value.trim(),
+    endTime: document.getElementById('eventEndTime').value.trim(),
+    details: {},
+  };
+}
+
+document.getElementById('eventForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!selectedDate) return;
+
+  const type = document.getElementById('eventType').value;
+  const payload = buildEventPayload(type);
+  const editingEventId = document.getElementById('editingEventId').value;
+
+  if (editingEventId) {
+    updateEvent(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      parseInt(editingEventId, 10),
+      payload,
+    );
+  } else {
+    addEvent(selectedDate.year, selectedDate.month, selectedDate.day, payload);
+  }
+
+  renderCalendar();
+  closeEventModal();
+});
 
   // Cancel edit button
   document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
