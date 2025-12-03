@@ -432,7 +432,7 @@ app.get('/login', (req, res) => {
 //   }
 // });
 
-app.post('/login', async (req, res) => {
+/*app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body; // capture login / password
 
@@ -474,8 +474,96 @@ app.post('/login', async (req, res) => {
       message: 'Server error. Please try again later.'
     });
   }
-});
+});*/
+app.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body; // capture login / password
 
+    // Look up user
+    const user = await db.oneOrNone(      
+      'SELECT * FROM users WHERE username = $1', 
+      [username]
+    );
+
+    // If username doesn't exist → show error
+    if (!user) {
+      return res.render('pages/login', { 
+        error: true,
+        message: 'Invalid username or password'
+      });
+    }
+
+    // Check password
+    const match = await bcrypt.compare(password, user.password);
+
+    // If password is wrong → show error
+    if (!match) {
+      return res.render('pages/login', { 
+        error: true,
+        message: 'Invalid username or password'
+      });
+    }
+
+    // Password OK → start login logic
+    req.session.user = user;
+
+    // --- Get today's date (YYYY-MM-DD) ---
+    const today = new Date().toLocaleDateString("sv");           // '2025-11-26'
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("sv");
+
+    // Extract values
+    let lastlogin = req.session.user.lastlogin;   // may be null
+    let streak = req.session.user.streak;         // number
+
+    // --- CASE 1: First login ever ---
+    if (lastlogin === null) {
+        streak = 1;
+    }
+
+    // --- CASE 2: Already logged in today ---
+    else if (lastlogin === today) {
+        // streak stays the same
+    }
+
+    // --- CASE 3: Logged in yesterday → increment streak ---
+    else if (lastlogin === yesterday) {
+        streak = streak + 1;
+    }
+
+    // --- CASE 4: Missed one or more days ---
+    else {
+        streak = 1;
+    }
+
+// --- Update database row ---
+await db.none(
+    `
+    UPDATE users 
+    SET lastlogin = $1, streak = $2
+    WHERE username = $3
+    `,
+    [today, streak, req.session.user.username]
+);
+
+// --- Update the session copy ---
+req.session.user.lastlogin = today;
+req.session.user.streak = streak;
+
+// Continue login success response…
+
+
+    req.session.save(() => {
+      res.redirect('/calendar');
+    });
+
+  } catch (error) {
+    console.log('login error', error);
+    return res.render('pages/login', { 
+      error: true,
+      message: 'Server error. Please try again later.'
+    });
+  }
+});
 
 // Homepage route - accessible without authentication
 app.get('/', (req, res) => {
@@ -773,7 +861,7 @@ app.get('/study-groups', async (req, res) => {
 
 app.post('/study-groups/create', async (req, res) => {
   try {
-    const { name, categroy, date, start_time, end_time, max_participants, members } = req.body;
+    const { name, category, date, start_time, end_time, max_participants, members } = req.body;
     const host_username = req.session.user.username;
 
     const insertGroupQuery = `
@@ -781,10 +869,16 @@ app.post('/study-groups/create', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `;
-    const groupResult = await db.one(insertGroupQuery, [name, categroy, date, start_time, end_time, host_username, max_participants]);
+    const groupResult = await db.one(insertGroupQuery, [name, category, date, start_time, end_time, host_username, max_participants]);
 
-    for (const m of members) {
-      await db.none(insertGroupQuery, [groupResult.id, m]);
+    // Insert members into study_group_members table
+    if (members && Array.isArray(members)) {
+      for (const m of members) {
+        await db.none(
+          `INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)`,
+          [groupResult.id, m]
+        );
+      }
     }
 
     res.status(200).json({ success: true, message: 'Study group created successfully' });
@@ -861,6 +955,17 @@ app.get('/assignments', async (req, res) => {
 
     // Format assignments with priority and due date
     const formattedAssignments = assignments.map(assignment => {
+      // Handle null due_at
+      if (!assignment.due_at) {
+        return {
+          name: assignment.name,
+          course: assignment.course || 'No Course',
+          dueDate: 'No due date',
+          priority: 'low',
+          description: assignment.description
+        };
+      }
+
       const dueDate = new Date(assignment.due_at);
       const now = new Date();
       const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
@@ -1089,4 +1194,106 @@ app.get('/logout', (req, res) => {
 const PORT = process.env.PORT || 3000;
 module.exports = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// Remove assignment assignment_friends -> then maybe from assignment
+app.get('/removeAssignment', async (req, res) => { // 
+  try {
+
+    let assignmentRequest = req.query.name;
+    // Look up assignment
+    const assignmentRow = await db.oneOrNone('SELECT * FROM assignments WHERE name = $1', 
+    [assignmentRequest]);
+
+    // No Assignment with given Name
+    if (!assignmentRow) {
+      return res.render('/calendar', {error: true, message: 'Invalid Assignment'});
+    }
+
+    // Look up current user info
+    const currentUser = req.session.user.username;
+
+    // delete the entry from assignment_friends
+    await db.none('DELETE FROM assignment_friends WHERE assignment_name = $1 AND user_username = $2',
+    [assignmentRow.name, currentUser]);
+
+    // Look up the count of assignment in assignment_friends
+    const entryCount = await db.one('SELECT COUNT(*) AS count FROM assignment_friends WHERE assignment_name = $1;',
+    [assignmentRow.name]);
+
+    // Deleted assignment in assignment if..-> All the assignmented deleted in assignment_friends
+    if(entryCount.count == "0")
+    {
+      const entryEvent = await db.none('DELETE FROM assignments WHERE name = $1',
+      [assignmentRow.name]);
+    }
+
+    return res.redirect('/calendar');
+
+  } catch (error) {
+    console.log(error);
+    res.redirect('/calendar');
+  }
+});
+
+// add_assignment
+app.post('/add_assignment', async (req, res) => {
+  console.log("POST /add_assignment BODY:", req.body);
+
+  const { name, description, course, due_at, is_group } = req.body;
+  const currentUser = req.session.user.username;  // <-- REQUIRED: your logged-in username
+
+  // Validate required fields
+  if (!name || !name.trim()) {
+    console.error("ERROR: Assignment name is required");
+    return res.redirect('/calendar');
+  }
+
+  if (!due_at) {
+    console.error("ERROR: Assignment due date is required");
+    return res.redirect('/calendar');
+  }
+
+  try {
+    // 1️⃣ Check if assignment already exists
+    const existingAssignment = await db.oneOrNone(
+      'SELECT * FROM assignments WHERE name = $1',
+      [name]
+    );
+
+    if (existingAssignment) {
+      console.log("Assignment already exists → only linking user");
+
+      // 2️⃣ Insert into assignment_friends (if not already linked)
+      await db.none(
+        `INSERT INTO assignment_friends (assignment_name, user_username)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [name, currentUser]
+      );
+
+    } else {
+      console.log("Assignment does NOT exist → inserting into assignments + linking user");
+
+      // 3️⃣ Create new assignment
+      await db.none(
+        `INSERT INTO assignments (name, description, course, due_at, is_group)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [name, description, course, due_at, is_group]
+      );
+
+      // 4️⃣ Link current user to this new assignment
+      await db.none(
+        `INSERT INTO assignment_friends (assignment_name, user_username)
+         VALUES ($1, $2)`,
+        [name, currentUser]
+      );
+    }
+
+    return res.redirect('/calendar');
+
+  } catch (error) {
+    console.error("ERROR in /add_assignment:", error);
+    return res.redirect('/calendar');
+  }
 });
