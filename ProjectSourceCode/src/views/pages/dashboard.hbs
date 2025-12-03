@@ -6,6 +6,12 @@
     <header class="dashboard-header">
       <div>
         <h1 class="welcome-title">Welcome back, {{user.username}}! 👋</h1>
+                
+        <p class="login-streak">
+          Your daily login streak is
+          <strong>{{user.daily_login_streak}}</strong> 🔥
+        </p>
+          
         <p class="welcome-subtitle">Here's what's happening with your studies today.</p>
       </div>
     </header>
@@ -133,6 +139,14 @@
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+  }
+
+  /* Login Streak */
+  .login-streak {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ff9800;
+    margin: 4px 0 12px 0;
   }
 
   /* Header */
