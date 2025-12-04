@@ -65,7 +65,7 @@
 
           <div class="field">
             <span class="label-sm">PASSWORD</span>
-            <input id="password" name="password" type="password" placeholder="" autocomplete="new-password" required>
+            <input id="password" name="password" type="password" placeholder="Min 8 chars, upper/lower/number" autocomplete="new-password" required pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$" title="Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, and one number.">
           </div>
 
           <div class="field">

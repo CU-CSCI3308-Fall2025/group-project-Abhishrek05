@@ -121,8 +121,13 @@
           <input type="hidden" id="editingEventId" value="">
           <button class="btn-primary" type="submit" id="submitBtn">Add Event</button>
           <button class="btn-secondary" type="button" id="cancelEditBtn" style="display: none; margin-top: 8px;">Cancel</button>
+          <!-- NEW: delete button for EDIT MODE -->
+          <button class="btn-secondary" type="button" id="deleteEditBtn"
+                  style="display: none; margin-top: 8px; color: red;">
+            Delete Event
+          </button>
         </div>
-      <form id="eventForm" action="/calendar/new" method="POST">
+      </form>
     </div>
   </div>
 </div>
@@ -555,6 +560,23 @@
   let selectedDate = null;
   const serverEvents = {{{json events}}};
 
+  // â­ Ensure every server event has a proper type
+  serverEvents.forEach(ev => {
+    if (!ev.type || ev.type === "") {
+
+      // Guess type if backend didn't provide one
+      if (ev.description && ev.description.length > 0 && ev.start_time === null) {
+        ev.type = "assignment";
+      }
+      else if (ev.meeting_link || ev.max_participants) {
+        ev.type = "study_group";
+      }
+      else {
+        ev.type = "meeting"; // default fallback
+      }
+    }
+  });
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -705,7 +727,7 @@ updateFieldVisibility(eventTypeSelect.value);
         const end = event.details.endTime || event.endTime;
         parts.push([start, end].filter(Boolean).join(' - '));
       }
-      return parts.join(' • ');
+      return parts.join(' â€¢ ');
     }
     if (event.time && event.endTime) return `${event.time} - ${event.endTime}`;
     if (event.time) return event.time;
@@ -719,7 +741,7 @@ updateFieldVisibility(eventTypeSelect.value);
       if (event.details.course) bits.push(event.details.course);
       if (event.details.dueAt) bits.push(`Due ${event.details.dueAt}`);
       if (event.details.description) bits.push(event.details.description);
-      return bits.join(' • ');
+      return bits.join(' â€¢ ');
     }
     if (event.type === 'study_group' && event.details) {
       const bits = ['Study Session'];
@@ -727,10 +749,10 @@ updateFieldVisibility(eventTypeSelect.value);
       const timeLabel = formatTimeLabel(event);
       if (timeLabel) bits.push(timeLabel);
       if (event.details.maxParticipants) bits.push(`Max ${event.details.maxParticipants}`);
-      return bits.join(' • ');
+      return bits.join(' â€¢ ');
     }
     const defaultLabel = formatTimeLabel(event);
-    return ['Group Meeting', defaultLabel].filter(Boolean).join(' • ');
+    return ['Group Meeting', defaultLabel].filter(Boolean).join(' â€¢ ');
   }
 
 
@@ -950,6 +972,9 @@ updateFieldVisibility(eventTypeSelect.value);
 
     // Update button text
     document.getElementById('submitBtn').textContent = 'Update Event';
+
+    // â­ MISSING LINE â€” REQUIRED â­
+    document.getElementById('deleteEditBtn').style.display = 'block';
     document.getElementById('cancelEditBtn').style.display = 'none';
     
     modal.style.display = 'block';
@@ -979,8 +1004,13 @@ updateFieldVisibility(eventTypeSelect.value);
         <div class="event-item-type">${getEventSubtitle(event)}</div>
       </div>
       <div class="event-item-actions">
-        <button class="event-item-edit" onclick="startEditEvent(${year}, ${month}, ${day}, ${event.id})" title="Edit">✎</button>
-        <button class="event-item-delete" onclick="deleteEventFromModal(${year}, ${month}, ${day}, ${event.id})" title="Delete">×</button>
+        <button class="event-item-edit" onclick="startEditEvent(${year}, ${month}, ${day}, ${event.id})" title="Edit">âœŽ</button>
+        <button 
+          class="event-item-delete" 
+          onclick="deleteAssignment('${event.title}', '${event.type}', ${year}, ${month}, ${day}, ${event.id})"
+          title="Delete"
+        >x</button>
+
       </div>
     </div>
   `).join('');
@@ -998,6 +1028,9 @@ updateFieldVisibility(eventTypeSelect.value);
     document.getElementById('submitBtn').textContent = 'Update Event';
     document.getElementById('cancelEditBtn').style.display = 'block';
 
+    // â­ NEW: show delete button in edit mode
+    document.getElementById('deleteEditBtn').style.display = 'block';
+
     // Scroll to form
     document.getElementById('eventForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -1007,6 +1040,10 @@ updateFieldVisibility(eventTypeSelect.value);
     document.getElementById('editingEventId').value = '';
     document.getElementById('submitBtn').textContent = 'Add Event';
     document.getElementById('cancelEditBtn').style.display = 'none';
+
+    // â­ NEW: hide delete button
+    document.getElementById('deleteEditBtn').style.display = 'none';
+
     updateFieldVisibility(document.getElementById('eventType').value);
   }
 
@@ -1019,6 +1056,8 @@ updateFieldVisibility(eventTypeSelect.value);
   // Make functions globally accessible
   window.deleteEventFromModal = deleteEventFromModal;
   window.startEditEvent = startEditEvent;
+  window.deleteAssignment = deleteAssignment;
+
 
   function buildEventPayload(type) {
   if (type === 'study_group') {
@@ -1071,7 +1110,7 @@ document.getElementById('eventForm').addEventListener('submit', (e) => {
   const type = document.getElementById('eventType').value;
   const payload = buildEventPayload(type);
 
-  // ⛔ If it's an assignment → save to DB, THEN stop
+  // â›” If it's an assignment â†’ save to DB, THEN stop
   if (type === "assignment") {
     saveAssignmentToDB(payload, selectedDate);
     return; // stop normal event creation
@@ -1150,6 +1189,29 @@ function addStudyGroupToPage(studyGroup) {
   // Cancel edit button
   document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
 
+  document.getElementById('deleteEditBtn').addEventListener('click', () => {
+      const eventId = parseInt(document.getElementById('editingEventId').value);
+
+      const e = getEventById(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        eventId
+      );
+
+      if (!e) return;
+
+      deleteAssignment(
+        e.title,
+        e.type,
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        eventId
+      );
+  });
+
+
   // Close modal when clicking outside
   window.onclick = function(event) {
     const modal = document.getElementById('eventModal');
@@ -1192,7 +1254,7 @@ function saveAssignmentToDB(payload, selectedDate) {
     })
   })
   .then(res => {
-    // Backend redirects → follow automatically
+    // Backend redirects â†’ follow automatically
     if (res.redirected) {
       window.location.href = res.url;
       return;
@@ -1200,7 +1262,7 @@ function saveAssignmentToDB(payload, selectedDate) {
     return res.json().catch(() => null);
   })
   .then(() => {
-    // 1️⃣ Add to calendar database
+    // 1ï¸âƒ£ Add to calendar database
     return fetch("/calendar/new", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1216,11 +1278,11 @@ function saveAssignmentToDB(payload, selectedDate) {
   })
   .then(res => res.json())
   .then(data => {
-    // 2️⃣ Push this new calendar event into serverEvents
+    // 2ï¸âƒ£ Push this new calendar event into serverEvents
     serverEvents.push({
     id: data.event.id,
     title: payload.details.name,
-    type: "assignment",           // 🔥 REQUIRED
+    type: "assignment",           // ðŸ”¥ REQUIRED
     details: {
       description: payload.details.description,
       course: payload.details.course,
@@ -1243,9 +1305,36 @@ function saveAssignmentToDB(payload, selectedDate) {
 }
 
 
+function deleteAssignment(name, type, year, month, day, eventId) {
+  console.log("DELETE ASSIGNMENT CLICKED:", name, type, year, month, day, eventId);
+  if (type === "assignment") {
+    fetch(`/removeAssignment?name=${encodeURIComponent(name)}`)
+      .then(() => {
+
+        // â­ Remove from serverEvents so calendar updates
+        const index = serverEvents.findIndex(ev =>
+          ev.title === name &&
+          ev.type === "assignment"
+        );
+        if (index !== -1) serverEvents.splice(index, 1);
+
+        deleteEventFromModal(year, month, day, eventId);
+        renderCalendar();
+        closeEventModal();
+      })
+      .catch(err => {
+        console.error("Delete failed:", err);
+        alert("Could not delete assignment from server");
+      });
+    return;
+  }
+
+  deleteEventFromModal(year, month, day, eventId);
+  renderCalendar();
+}
+
   
 
   // Initial render
   renderCalendar();
 </script>
-

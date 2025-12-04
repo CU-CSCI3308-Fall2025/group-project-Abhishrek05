@@ -383,7 +383,7 @@ app.post('/register', async (req, res) => {
       [username, email]
     );
 
-    // If username does exist → show error
+    // If username does exist â†’ show error
     if (user) {
       return res.render('pages/register', { 
         error: true,
@@ -446,7 +446,7 @@ app.get('/login', (req, res) => {
       [username]
     );
 
-    // If username doesn't exist → show error
+    // If username doesn't exist â†’ show error
     if (!user) {
       return res.render('pages/login', { 
         error: true,
@@ -457,7 +457,7 @@ app.get('/login', (req, res) => {
     // Check password
     const match = await bcrypt.compare(password, user.password);
 
-    // If password is wrong → show error
+    // If password is wrong â†’ show error
     if (!match) {
       return res.render('pages/login', { 
         error: true,
@@ -465,7 +465,7 @@ app.get('/login', (req, res) => {
       });
     }
 
-    // Password OK → log in
+    // Password OK â†’ log in
     req.session.user = user;
     req.session.save(() => {
       res.redirect('/dashboard');
@@ -489,7 +489,7 @@ app.post('/login', async (req, res) => {
       [username]
     );
 
-    // If username doesn't exist → show error
+    // If username doesn't exist â†’ show error
     if (!user) {
       return res.render('pages/login', { 
         error: true,
@@ -500,7 +500,7 @@ app.post('/login', async (req, res) => {
     // Check password
     const match = await bcrypt.compare(password, user.password);
 
-    // If password is wrong → show error
+    // If password is wrong â†’ show error
     if (!match) {
       return res.render('pages/login', { 
         error: true,
@@ -508,7 +508,7 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Password OK → start login logic
+    // Password OK â†’ start login logic
     req.session.user = user;
 
     // --- Get today's date (YYYY-MM-DD) ---
@@ -527,7 +527,7 @@ app.post('/login', async (req, res) => {
     else if (lastlogin === today) {
         // streak stays the same
     }
-    // --- CASE 3: Logged in yesterday → increment streak ---
+    // --- CASE 3: Logged in yesterday â†’ increment streak ---
     else if (lastlogin === yesterday) {
         streak = (streak || 0) + 1;
     }
@@ -704,6 +704,7 @@ app.get('/dashboard', async (req, res) => {
   }
 });
 
+
 app.get('/calendar', async (req, res) => {
   try {
     const username = req.session.user.username;
@@ -719,17 +720,50 @@ app.get('/calendar', async (req, res) => {
       ORDER BY ce.event_date ASC, ce.start_time ASC;
     `, [username]);
 
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+
+    const currentUser = req.session.user.username;
+
+    // 1ï¸âƒ£ Get assignment NAMES linked to this user
+    const userAssignments = await db.any(
+      `SELECT assignment_name
+       FROM assignment_friends
+       WHERE user_username = $1`,
+      [currentUser]
+    );
+
+    const assignmentNames = userAssignments.map(a => a.assignment_name);
+
+    // 2ï¸âƒ£ Pull calendar_events ONLY for those assignments (matched by title)
+    let events = [];
+    if (assignmentNames.length > 0) {
+      events = await db.any(
+        `SELECT *
+         FROM calendar_events
+         WHERE source_type = 'assignment'
+           AND title = ANY($1)
+         ORDER BY event_date ASC, start_time ASC`,
+        [assignmentNames]
+      );
+    }
+
+    // 3ï¸âƒ£ Render calendar page
     res.render('pages/calendar.hbs', {
       title: 'Calendar',
       user: req.session.user,
       currentPage: 'calendar',
       events: events
     });
+
   } catch (err) {
-    console.error('Error fetching calendar events:', err);
-    res.status(500).json({ success: false, message: 'Error fetching calendar events' });
+    console.error("Calendar ERROR:", err);
+    res.status(500).send("Error loading calendar");
   }
 });
+
+
 
 app.post("/calendar/new", async (req, res) => {
   try {
@@ -1479,7 +1513,7 @@ app.post('/add_assignment', async (req, res) => {
     );
 
     if (existingAssignment) {
-      console.log("Assignment already exists → only linking user");
+      console.log("Assignment already exists â†’ only linking user");
       await db.none(
         `INSERT INTO assignment_friends (assignment_name, user_username)
          VALUES ($1, $2)
@@ -1487,7 +1521,7 @@ app.post('/add_assignment', async (req, res) => {
         [name, currentUser]
       );
     } else {
-      console.log("Assignment does NOT exist → inserting into assignments + linking user");
+      console.log("Assignment does NOT exist â†’ inserting into assignments + linking user");
 
       await db.none(
         `INSERT INTO assignments (name, description, course, due_at, is_group)
