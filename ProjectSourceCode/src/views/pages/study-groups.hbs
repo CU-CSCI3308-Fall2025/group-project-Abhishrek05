@@ -189,6 +189,15 @@
               pattern="https?://.+" required/>
         </div>
 
+        <div class="friend-checkboxes">
+          {{#each friends}}
+            <label class="friend-checkbox">
+              <input type="checkbox" name="members[]" value="{{this}}">
+              {{this}}
+            </label>
+          {{/each}}
+        </div>
+
         <button class="btn-primary" type="submit">Save Changes</button>
       </form>
     </div>
@@ -321,7 +330,7 @@
       end_time: formData.get("end_time"),
       max_participants: formData.get("max_participants"),
       meeting_link: formData.get("event_remote_url"),
-      members: formData.getAll("members")
+      members: formData.getAll("members[]")
     };
 
     const res = await fetch("/study-groups/create", {
