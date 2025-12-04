@@ -737,9 +737,9 @@ app.get('/calendar', async (req, res) => {
     const assignmentNames = userAssignments.map(a => a.assignment_name);
 
     // 2ï¸âƒ£ Pull calendar_events ONLY for those assignments (matched by title)
-    let events = [];
+    let eventsAssingments = [];
     if (assignmentNames.length > 0) {
-      events = await db.any(
+      eventsAssingments = await db.any(
         `SELECT *
          FROM calendar_events
          WHERE source_type = 'assignment'
