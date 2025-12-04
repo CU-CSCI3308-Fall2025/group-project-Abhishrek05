@@ -1110,56 +1110,90 @@ app.get('/study-groups/:id', async (req, res) => {
 
 app.put('/study-groups/edit/:id', async (req, res) => {
   const groupId = req.params.id;
-  const { name, category, date, start_time, end_time, max_participants, meeting_link } = req.body;
-  const members = req.body.members || []; // Array of usernames
+  const members = req.body.members || [];
   const username = req.session.user.username;
 
   try {
-    // Ensure only host can edit
     const group = await db.oneOrNone(
       'SELECT * FROM study_groups WHERE id = $1 AND host_username = $2',
       [groupId, username]
     );
+
     if (!group) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
-    // Start transaction
     await db.tx(async t => {
-      // Update study group
+
+      const updates = {
+        name: req.body.name ?? group.name,
+        category: req.body.category ?? group.category,
+        date: req.body.date ?? group.date,
+        start_time: req.body.start_time ?? group.start_time,
+        end_time: req.body.end_time ?? group.end_time,
+        max_participants: req.body.max_participants ?? group.max_participants,
+        meeting_link: req.body.meeting_link ?? group.meeting_link
+      };
+
       await t.none(
         `UPDATE study_groups
          SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6, meeting_link = $7
          WHERE id = $8`,
-        [name, category, date, start_time, end_time, max_participants, meeting_link, groupId]
+        [
+          updates.name,
+          updates.category,
+          updates.date,
+          updates.start_time,
+          updates.end_time,
+          updates.max_participants,
+          updates.meeting_link,
+          groupId
+        ]
       );
 
-      // Update calendar event
       await t.none(
         `UPDATE calendar_events
          SET title = $1, description = $2, event_date = $3, start_time = $4, end_time = $5
          WHERE source_type = 'study_group' AND source_id = $6`,
-        [name, `Study group for ${category}`, date, start_time, end_time, groupId]
+        [
+          updates.name,
+          `Study group for ${updates.category}`,
+          updates.date,
+          updates.start_time,
+          updates.end_time,
+          groupId
+        ]
       );
 
-      // Update group members
-      // Update group members
+      // Only include this if you want members editing back:
       await t.none('DELETE FROM study_group_members WHERE group_id = $1', [groupId]);
+
+      // Always add the host back first
+      await t.none(
+        'INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)',
+        [groupId, username]
+      );
+
+      // Then add selected members
       for (const member of members) {
-        await t.none(
-          'INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)',
-          [groupId, member]
-        );
-}
+        if (member !== username) {  // don't double-insert host
+          await t.none(
+            'INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)',
+            [groupId, member]
+          );
+        }
+      }
 
     });
 
-    res.json({ success: true, message: 'Study group updated successfully' });
-  } catch (error) {
-    console.error('Error updating study group:', error);
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 
 
 app.delete('/study-groups/delete/:id', async (req, res) => {

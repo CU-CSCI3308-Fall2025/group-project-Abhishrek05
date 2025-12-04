@@ -385,13 +385,27 @@
     e.preventDefault();
 
     const formData = new FormData(editForm);
-    const payload = Object.fromEntries(formData.entries());
+
+    const payload = {
+      id: formData.get("id"),
+      name: formData.get("name"),
+      category: formData.get("category"),
+      date: formData.get("date"),
+      start_time: formData.get("start_time"),
+      end_time: formData.get("end_time"),
+      max_participants: formData.get("max_participants"),
+      meeting_link: formData.get("meeting_link"),
+
+      // This is the key — preserve array!
+      members: formData.getAll("members[]")
+    };
 
     const res = await fetch(`/study-groups/edit/${payload.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+
 
     if (res.ok) {
       window.location.reload();
