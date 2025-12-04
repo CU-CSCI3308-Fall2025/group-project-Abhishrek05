@@ -707,6 +707,19 @@ app.get('/dashboard', async (req, res) => {
 
 app.get('/calendar', async (req, res) => {
   try {
+    const username = req.session.user.username;
+
+    const events = await db.any(`
+      SELECT ce.*
+      FROM calendar_events ce
+      LEFT JOIN study_group_members sgm
+        ON ce.source_type = 'study_group' AND ce.source_id = sgm.group_id
+      WHERE
+        ce.source_type != 'study_group'
+        OR sgm.username = $1
+      ORDER BY ce.event_date ASC, ce.start_time ASC;
+    `, [username]);
+
     if (!req.session.user) {
       return res.redirect('/login');
     }
@@ -985,12 +998,20 @@ app.get('/study-groups', async (req, res) => {
         sg.host_username,
         sg.max_participants,
         sg.meeting_link,
-        COUNT(sgm.username) AS current_participants
+        COUNT(sgm2.username) AS current_participants
       FROM study_groups sg
-      LEFT JOIN study_group_members sgm ON sg.id = sgm.group_id
+
+      -- The key: only include groups where the user is a member
+      JOIN study_group_members sgm ON sg.id = sgm.group_id
+        AND sgm.username = $1
+
+      -- Count all members for display purposes
+      LEFT JOIN study_group_members sgm2 ON sg.id = sgm2.group_id
+
       GROUP BY sg.id
       ORDER BY sg.date ASC, sg.start_time ASC;
-      `);
+    `, [username]);
+
 
       const friends = await db.any(`
       SELECT friend_username
@@ -1013,8 +1034,18 @@ app.get('/study-groups', async (req, res) => {
 
 app.post('/study-groups/create', async (req, res) => {
   try {
-    const { name, category, date, start_time, end_time, max_participants, meeting_link, members } = req.body;
+    const { name, category, date, start_time, end_time, max_participants, meeting_link } = req.body;
     const host_username = req.session.user.username;
+
+    const rawMembers = req.body.members ?? req.body['members[]'];
+    let membersList = [];
+    if (rawMembers) {
+      if (Array.isArray(rawMembers)) {
+        membersList = rawMembers;
+      }
+      //trims and removes empty strings
+      membersList = membersList.map(m => m && String(m).trim()).filter(Boolean);
+    }
 
     const insertGroupQuery = `
       INSERT INTO study_groups (name, category, date, start_time, end_time, host_username, max_participants, meeting_link)
@@ -1022,13 +1053,36 @@ app.post('/study-groups/create', async (req, res) => {
       RETURNING id
     `;
     const groupResult = await db.one(insertGroupQuery, [name, category, date, start_time, end_time, host_username, max_participants, meeting_link]);
+    const groupId = groupResult.id;
 
-    // Insert members into study_group_members table
-    if (members && Array.isArray(members)) {
-      for (const m of members) {
+    //Always add host as member
+    await db.none(
+      `INSERT INTO study_group_members (group_id, username) VALUES ($1, $2) 
+      ON CONFLICT DO NOTHING`,
+      [groupId, host_username]
+    );
+
+    if(membersList.length > 0) {
+      const friendRows = await db.any(`
+        SELECT 
+          CASE 
+            WHEN user_username = $1 THEN friend_username
+            ELSE user_username
+          END AS friend
+        FROM friendList
+        WHERE user_username = $1 OR friend_username = $1`, 
+        [host_username]);
+
+      const friendSet = new Set(friendRows.map(r => r.friend));
+      // Keep only valid friends (and never add host again)
+      const validMembers = membersList.filter(m => friendSet.has(m) && m !== host_username);
+      // Insert each valid member (simple loop is fine; ON CONFLICT prevents dupes)
+      for (const username of validMembers) {
         await db.none(
-          `INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)`,
-          [groupResult.id, m]
+          `INSERT INTO study_group_members (group_id, username)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [groupId, username]
         );
       }
     }
@@ -1059,26 +1113,56 @@ app.get('/study-groups/:id', async (req, res) => {
 app.put('/study-groups/edit/:id', async (req, res) => {
   const groupId = req.params.id;
   const { name, category, date, start_time, end_time, max_participants, meeting_link } = req.body;
+  const members = req.body.members || []; // Array of usernames
   const username = req.session.user.username;
-  // Ensure only host can edit
-  const group = await db.oneOrNone('SELECT * FROM study_groups WHERE id = $1 AND host_username = $2', [groupId, username]);
-  if(!group || group.host_username !== username) { 
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+  try {
+    // Ensure only host can edit
+    const group = await db.oneOrNone(
+      'SELECT * FROM study_groups WHERE id = $1 AND host_username = $2',
+      [groupId, username]
+    );
+    if (!group) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Start transaction
+    await db.tx(async t => {
+      // Update study group
+      await t.none(
+        `UPDATE study_groups
+         SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6, meeting_link = $7
+         WHERE id = $8`,
+        [name, category, date, start_time, end_time, max_participants, meeting_link, groupId]
+      );
+
+      // Update calendar event
+      await t.none(
+        `UPDATE calendar_events
+         SET title = $1, description = $2, event_date = $3, start_time = $4, end_time = $5
+         WHERE source_type = 'study_group' AND source_id = $6`,
+        [name, `Study group for ${category}`, date, start_time, end_time, groupId]
+      );
+
+      // Update group members
+      // Update group members
+      await t.none('DELETE FROM study_group_members WHERE group_id = $1', [groupId]);
+      for (const member of members) {
+        await t.none(
+          'INSERT INTO study_group_members (group_id, username) VALUES ($1, $2)',
+          [groupId, member]
+        );
+}
+
+    });
+
+    res.json({ success: true, message: 'Study group updated successfully' });
+  } catch (error) {
+    console.error('Error updating study group:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
-
-  await db.none(`
-    UPDATE study_groups
-    SET name = $1, category = $2, date = $3, start_time = $4, end_time = $5, max_participants = $6, meeting_link = $7
-    WHERE id = $8`, [name, category, date, start_time, end_time, max_participants, meeting_link, groupId]
-  );
-
-  await db.none(`
-    UPDATE calendar_events
-    SET title = $1, description = $2, event_date = $3, start_time = $4, end_time = $5
-    WHERE source_type = 'study_group' AND source_id = $6`,
-    [name, `Study group for ${category}`, date, start_time, end_time, groupId]);
-  res.json({ success: true, message: 'Study group updated successfully' });
 });
+
 
 app.delete('/study-groups/delete/:id', async (req, res) => {
   const groupId = req.params.id;
