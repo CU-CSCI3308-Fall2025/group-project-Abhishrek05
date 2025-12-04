@@ -707,54 +707,52 @@ app.get('/dashboard', async (req, res) => {
 
 app.get('/calendar', async (req, res) => {
   try {
-    const username = req.session.user.username;
-
-    const events = await db.any(`
-      SELECT ce.*
-      FROM calendar_events ce
-      LEFT JOIN study_group_members sgm
-        ON ce.source_type = 'study_group' AND ce.source_id = sgm.group_id
-      WHERE
-        ce.source_type != 'study_group'
-        OR sgm.username = $1
-      ORDER BY ce.event_date ASC, ce.start_time ASC;
-    `, [username]);
-
     if (!req.session.user) {
       return res.redirect('/login');
     }
 
-    const currentUser = req.session.user.username;
+    const username = req.session.user.username;
 
-    // 1ï¸âƒ£ Get assignment NAMES linked to this user
-    const userAssignments = await db.any(
-      `SELECT assignment_name
-       FROM assignment_friends
-       WHERE user_username = $1`,
-      [currentUser]
-    );
+    // 1️⃣ Get study group events BUT only where this user is a member
+    const studyGroupEvents = await db.any(`
+      SELECT ce.*
+      FROM calendar_events ce
+      JOIN study_group_members sgm
+        ON ce.source_type = 'study_group' AND ce.source_id = sgm.group_id
+      WHERE sgm.username = $1
+      ORDER BY ce.event_date, ce.start_time;
+    `, [username]);
+
+    // 2️⃣ Get assignment names linked to this user
+    const userAssignments = await db.any(`
+      SELECT assignment_name
+      FROM assignment_friends
+      WHERE user_username = $1
+    `, [username]);
 
     const assignmentNames = userAssignments.map(a => a.assignment_name);
 
-    // 2ï¸âƒ£ Pull calendar_events ONLY for those assignments (matched by title)
-    let eventsAssingments = [];
+    // 3️⃣ Get assignment events ONLY belonging to this user
+    let assignmentEvents = [];
     if (assignmentNames.length > 0) {
-      eventsAssingments = await db.any(
-        `SELECT *
-         FROM calendar_events
-         WHERE source_type = 'assignment'
-           AND title = ANY($1)
-         ORDER BY event_date ASC, start_time ASC`,
-        [assignmentNames]
-      );
+      assignmentEvents = await db.any(`
+        SELECT *
+        FROM calendar_events
+        WHERE source_type = 'assignment'
+          AND title = ANY($1)
+        ORDER BY event_date, start_time;
+      `, [assignmentNames]);
     }
 
-    // 3ï¸âƒ£ Render calendar page
+    // 4️⃣ Combine BOTH event lists
+    const allEvents = [...studyGroupEvents, ...assignmentEvents];
+
+    // 5️⃣ Render
     res.render('pages/calendar.hbs', {
       title: 'Calendar',
       user: req.session.user,
       currentPage: 'calendar',
-      events: events
+      events: allEvents,
     });
 
   } catch (err) {
