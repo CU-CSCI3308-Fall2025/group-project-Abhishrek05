@@ -282,11 +282,11 @@ hbs.handlebars.registerHelper('json', function(context) {
 
 // database configuration
 const dbConfig = {
-  host: process.env.POSTGRES_HOST || 'dpg-d4fppdshg0os73civju0-a', // the database server
+  host: process.env.POSTGRES_HOST, // the database server
   port: 5432, // the database port
-  database: process.env.POSTGRES_DB || 'users_db_z1ec', // the database name
-  user: process.env.POSTGRES_USER || 'users_db_z1ec_user', // the user account to connect with
-  password: process.env.POSTGRES_PASSWORD || 'users_db_z1ec_user', // the password of the user account
+  database: process.env.POSTGRES_DB, // the database name
+  user: process.env.POSTGRES_USER, // the user account to connect with
+  password: process.env.POSTGRES_PASSWORD, // the password of the user account
 };
 
 const db = pgp(dbConfig);
